@@ -120,10 +120,6 @@ export class FunctionCallDefinition {
  */
 export class GeminiLiveAPI {
   constructor() {
-    this.projectId = "starter-apps-base"; // Default, will be overridden by backend if needed
-    this.model = "gemini-live-2.5-flash-native-audio";
-    this.modelUri = `projects/${this.projectId}/locations/us-central1/publishers/google/models/${this.model}`;
-
     this.responseModalities = ["AUDIO"];
     this.systemInstructions = "";
     this.googleGrounding = false;
@@ -174,10 +170,7 @@ export class GeminiLiveAPI {
     console.log("Created Gemini Live API object: ", this);
   }
 
-  setProjectId(projectId) {
-    this.projectId = projectId;
-    this.modelUri = `projects/${this.projectId}/locations/us-central1/publishers/google/models/${this.model}`;
-  }
+
 
   setSystemInstructions(newSystemInstructions) {
     console.log("setting system instructions: ", newSystemInstructions);
@@ -344,7 +337,7 @@ export class GeminiLiveAPI {
 
     const sessionSetupMessage = {
       setup: {
-        model: this.modelUri,
+
         generation_config: {
           response_modalities: this.responseModalities,
           temperature: this.temperature,
