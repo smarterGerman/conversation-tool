@@ -4,12 +4,20 @@
 [![GitHub forks](https://img.shields.io/github/forks/ZackAkil/immersive-language-learning-with-live-api?style=social)](https://github.com/ZackAkil/immersive-language-learning-with-live-api/network/members)
 [![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=flat&logo=fastapi)](https://fastapi.tiangolo.com/)
 [![Gemini Live API](https://img.shields.io/badge/Google%20Gemini%20Live%20API-8E75B2?style=flat&logo=google&logoColor=white)](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/live-api)
+
+### **[🚀 Try the Demo at immergo.app](https://immergo.app/)**
+
+---
+
+## ⚡️ Quick Deployment
+
+Launch your own private instance of Immergo to Google Cloud in just one click. No local setup required.
+
 [![Run on Google Cloud](https://deploy.cloud.run/button.svg)](https://deploy.cloud.run/?git_repo=https://github.com/ZackAkil/immersive-language-learning-with-live-api)
 
+---
 
-## **[Try it now at immergo.app](https://immergo.app/)**
-
-Immergo is an immersive language learning application powered by the Google Gemini Live SDK. It simulates real-world roleplay scenarios (e.g., buying a bus ticket, ordering coffee) to help users practice speaking in various languages with an AI that acts as a native speaker.
+Immergo is an interactive language learning application powered by the **Google Gemini Live SDK**. It simulates real-world roleplay scenarios (e.g., buying a bus ticket, ordering coffee) to help users practice speaking in various languages with an AI that adopts perfectly reactive personas.
 
 
 ![Immergo Screenshot](screenshot.png)
@@ -85,24 +93,17 @@ To serve the built frontend via the Python server:
     ```
 3.  Access at `http://localhost:8000`.
 
-### Production Deployment (Google Cloud Run)
+### 🚀 One-Click Production Deployment
 
-To deploy this application to Google Cloud Run, you can use the provided `deploy.sh` script as a clear reference for the necessary `gcloud` commands and environment configurations.
+The fastest way to get Immergo running in production is using Google Cloud Run:
 
-1.  **Configure `deploy.sh`**:
-    Open `deploy.sh` and update the configuration variables at the top of the file to match your Google Cloud project details:
-    ```bash
-    PROJECT_ID="your-project-id"
-    REGION="us-central1"
-    SERVICE_NAME="your-service-name"
-    # ... update other variables as needed
-    ```
+1.  **Click the button below**:
+    [![Run on Google Cloud](https://deploy.cloud.run/button.svg)](https://deploy.cloud.run/?git_repo=https://github.com/ZackAkil/immersive-language-learning-with-live-api)
+2.  **Follow the prompts** in the Google Cloud Shell to authorize and deploy.
 
-2.  **Deploy**:
-    Run the script to build the frontend and deploy the service:
-    ```bash
-    ./deploy.sh
-    ```
+### 🛠 Manual Deployment (via `deploy.sh`)
+
+If you prefer to deploy from your terminal, you can use the provided `deploy.sh` script:
 
 
 ### Advanced Configuration
@@ -126,4 +127,23 @@ For scalable rate limiting across multiple container instances:
     -   *Note: If using Memorystore for Redis, ensure your Cloud Run service is connected to the same VPC network.*
 
 
+---
 
+## 🏃‍♂️ Get Started with Vibe-Coding in Google Antigravity
+
+Build your own features, scenarios, or UI components in seconds using **Google Antigravity**. Whether you want to add a "Space Travel" mission or a new "Translator HUD," here is how to vibe-code your vision:
+
+### 1. Open the Repository in Antigravity
+Launch the workspace and point Antigravity to this folder. It will automatically ingest the `GEMINI.md` context file to understand the architecture.
+
+### 2. Describe Your Vibe
+Instead of writing boilerplate, just describe the feature you want.
+*   *"Add a new mission called 'Mars Colony Arrival' where the AI acts as a customs officer."*
+*   *"Make the splash screen heading pulse with a holographic glow."*
+*   *"Add a 'Voice Select' dropdown to the HUD so I can pick Gemini's personality."*
+
+### 3. Iterate via Live Preview
+Use the `./dev.sh` hot-reloading server. As Antigravity writes the code, you'll see the UI update instantly. Tell it to *"make the buttons more glassmorphic"* or *"shift the layout down for better balance"* until it feels just right.
+
+### 4. Deploy Your Build
+Once you're happy with your changes, use the **One-Click Deployment** or use Antigravity's terminal to run `./deploy.sh` to push your build directly to Google Cloud Run.
