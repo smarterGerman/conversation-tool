@@ -276,13 +276,20 @@ class ViewMissions extends HTMLElement {
     const toSelect = this.querySelector('#to-lang');
     const fromSelect = this.querySelector('#from-lang');
 
-    if (savedLang) toSelect.value = savedLang;
+    if (savedLang) {
+      toSelect.value = savedLang;
+    } else {
+      // Default practice to Spanish if first time to avoid English/English default
+      const options = Array.from(toSelect.options);
+      const spanishOption = options.find(o => o.text.includes('Spanish'));
+      if (spanishOption) toSelect.value = spanishOption.text;
+    }
 
     // Default From language to English if not set
     if (savedFromLang) {
       fromSelect.value = savedFromLang;
     } else {
-      // Try to find English or default to first
+      // Try to find English
       const options = Array.from(fromSelect.options);
       const englishOption = options.find(o => o.text.includes('English'));
       if (englishOption) fromSelect.value = englishOption.text;
@@ -400,6 +407,12 @@ class ViewMissions extends HTMLElement {
 
         const selectedToLang = toSelect.value;
         const selectedFromLang = fromSelect.value;
+
+        if (selectedToLang === selectedFromLang) {
+          alert(`Please select a different language to practice. You currently have both set to ${selectedToLang}.`);
+          return;
+        }
+
         // currentMode is defined in the closure above? No, it's local to connectedCallback.
         // We need to re-read it or make it accessible. Let's re-read from localStorage for simplicity and safety
         const selectedMode = localStorage.getItem('immergo_mode') || 'immergo_immersive';

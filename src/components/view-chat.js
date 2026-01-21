@@ -83,11 +83,33 @@ class ViewChat extends HTMLElement {
        
 
         <div style="margin-top: var(--spacing-xl); text-align: center;">
-          <h2 style="font-size: 1.5rem; margin-bottom: var(--spacing-xs);">${this._mission.target_role || "Target Person"
+          <h2 style="font-size: 1.5rem; margin-bottom: 2px;">${this._mission.target_role || "Target Person"
       }</h2>
+          
+          <!-- Language Visibility Pill -->
           <div style="
-            background: rgba(var(--color-accent-secondary-rgb), 0.1); 
-            border: 1px solid var(--color-accent-secondary);
+            font-size: 0.85rem; 
+            font-weight: 700; 
+            color: var(--color-text-sub);
+            margin-bottom: var(--spacing-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: rgba(0,0,0,0.04);
+            padding: 4px 12px;
+            border-radius: var(--radius-full);
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+            border: 1px solid rgba(0,0,0,0.05);
+          ">
+            <span>${this._fromLanguage}</span>
+            <span style="opacity: 0.3; font-weight: normal;">➔</span>
+            <span style="color: var(--color-accent-primary);">${this._language}</span>
+          </div>
+
+          <div style="
             border-radius: var(--radius-lg);
             padding: var(--spacing-md) var(--spacing-lg);
             display: inline-block;
@@ -505,21 +527,25 @@ class ViewChat extends HTMLElement {
 ROLEPLAY INSTRUCTION:
 You are acting as **${targetRole}**, a native speaker of ${language}.
 The user is a language learner (native speaker of ${fromLanguage}) trying to: "${missionTitle}" (${missionDesc}).
-Your goal is to be a HELPFUL TEACHER while playing your role (${targetRole}).
-Speak in the accent and tone of the role.
+Your goal is to be a PROACTIVE LANGUAGE MENTOR while staying in character as ${targetRole}.
+
+TEACHING PROTOCOL:
+1. **Gentle Corrections**: If the user makes a clear mistake, respond in character first, then briefly provide a friendly correction or a "more natural way to say that" in ${fromLanguage}.
+2. **Vocabulary Boost**: Every few turns, suggest 1-2 relevant words or idioms in ${language} that fit the current situation and explain their meaning in ${fromLanguage}.
+3. **Mini-Checks**: Occasionally (every 3-4 turns), ask the user a quick "How would you say...?" question in ${fromLanguage} related to the mission to test their recall.
+4. **Scaffolding**: If the user is hesitant, provide the start of a sentence in ${language} or give them two options to choose from to keep the momentum.
+5. **Mixed-Language Support**: Use ${fromLanguage} for teaching moments, but always pivot back to ${language} to maintain the immersive feel.
 
 INTERACTION GUIDELINES:
-1. Act as the person, but if the user struggles, friendly explains options in their native language (${fromLanguage}).
-2. It's okay for the user to ask questions in ${fromLanguage}. Answer them helpfully.
-3. Encourage the user to speak ${language}, but do not force them if they are asking for clarity.
-4. Utilising the proactive audio feature, do not respond until it is necessary.
+1. Prioritize the flow of conversation—don't let the teaching feel like a lecture.
+2. Utilize the proactive audio feature: do not respond until the user has clearly finished their thought.
 
 MISSION COMPLETION:
-When the user has successfully achieved the mission objective declared in the scenario:
-1. Speak a brief congratulatory message and sound happy for their progress.
+When the user has successfully achieved the mission objective:
+1. Give a warm congratulatory message in ${language}, then translate the praise into ${fromLanguage}.
 2. THEN call the "complete_mission" tool.
-3. IMPORTANT: Set 'score' to 0 (Zero) to indicate this was a practice session.
-4. Provide 3 helpful tips or vocabulary words they learned in the feedback list (in ${fromLanguage}).
+3. Set 'score' to 0 (Zero) as this is a learning-focused practice session.
+4. Provide 3 specific takeaways (grammar tips or new words) in the feedback list in ${fromLanguage}.
 `;
           } else {
             // Immersive Mode Prompt (Default)
