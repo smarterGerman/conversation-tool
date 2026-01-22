@@ -253,7 +253,7 @@ class ViewChat extends HTMLElement {
                     The global quota has been reached. But you can skip the queue by deploying your own version on Google Cloud Run!
                 </p>
                 <div style="display: flex; flex-direction: column; gap: var(--spacing-md); margin-bottom: var(--spacing-lg);">
-                     <a href="https://deploy.cloud.run/?git_repo=https://github.com/ZackAkil/immersive-language-learning-with-live-api" target="_blank" style="
+                     <a href="https://deploy.cloud.run/?git_repo=https://github.com/ZackAkil/immersive-language-learning-with-live-api&utm_source=github&utm_medium=unpaidsoc&utm_campaign=FY-Q1-global-cloud-ai-starter-apps&utm_content=immergo-app&utm_term=-" target="_blank" style="
                         display: flex;
                         align-items: center;
                         justify-content: center;

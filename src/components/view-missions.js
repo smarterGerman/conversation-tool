@@ -240,7 +240,7 @@ class ViewMissions extends HTMLElement {
                     <div style="flex: 1; display: flex; justify-content: flex-end; gap: var(--spacing-md);">
 
 
-                        <a href="https://deploy.cloud.run/?git_repo=https://github.com/ZackAkil/immersive-language-learning-with-live-api" target="_blank" style="
+                        <a href="https://deploy.cloud.run/?git_repo=https://github.com/ZackAkil/immersive-language-learning-with-live-api&utm_source=github&utm_medium=unpaidsoc&utm_campaign=FY-Q1-global-cloud-ai-starter-apps&utm_content=immergo-app&utm_term=-" target="_blank" style="
                             display: flex;
                             align-items: center;
                             justify-content: center;

@@ -11,8 +11,6 @@
 
 Launch your own private instance of Immergo to Google Cloud in just one click. No local setup required.
 
-[![Run on Google Cloud](https://deploy.cloud.run/button.svg)](https://deploy.cloud.run)
-
 [![Run on Google Cloud](https://deploy.cloud.run/button.svg)](https://deploy.cloud.run/?utm_source=github&utm_medium=unpaidsoc&utm_campaign=FY-Q1-global-cloud-ai-starter-apps&utm_content=immergo-app&utm_term=-)
 
 ---
@@ -117,7 +115,7 @@ To serve the built frontend via the Python server:
 The fastest way to get Immergo running in production is using Google Cloud Run:
 
 1.  **Click the button below**:
-    [![Run on Google Cloud](https://deploy.cloud.run/button.svg)](https://deploy.cloud.run)
+ [![Run on Google Cloud](https://deploy.cloud.run/button.svg)](https://deploy.cloud.run/?utm_source=github&utm_medium=unpaidsoc&utm_campaign=FY-Q1-global-cloud-ai-starter-apps&utm_content=immergo-app&utm_term=-)   
 2.  **Follow the prompts** in the Google Cloud Shell to authorize and deploy.
 
 ### 🛠 Manual Deployment (via `deploy.sh`)
