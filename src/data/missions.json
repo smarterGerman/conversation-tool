@@ -1,66 +1,312 @@
-[
-  {
-    "id": 0,
-    "title": "Say Hello",
-    "difficulty": "Easy",
-    "desc": "Introduce yourself and ask how they are.",
-    "target_role": "Exited Neighbor"
-  },
-  {
-    "id": 5,
-    "title": "Order a Coffee",
-    "difficulty": "Easy",
-    "desc": "Order a coffee and a pastry to go.",
-    "target_role": "Flustered/Panicked Barista"
-  },
-  {
-    "id": 1,
-    "title": "Buy a bus ticket",
-    "difficulty": "Medium",
-    "desc": "You need to get to the city center.",
-    "target_role": "Angry Bus Driver"
-  },
-  {
-    "id": 2,
-    "title": "Order dinner with Jack",
-    "difficulty": "Medium",
-    "desc": "Your flatmate is hungry, find out what he wants.",
-    "target_role": "Indecisive Flatmate"
-  },
-  {
-    "id": 6,
-    "title": "Return a Shirt",
-    "difficulty": "Medium",
-    "desc": "The size is wrong, you want a refund.",
-    "target_role": "Happy Shop Assistant"
-  },
-  {
-    "id": 3,
-    "title": "Ask for directions",
-    "difficulty": "Hard",
-    "desc": "You are lost in Paris.",
-    "target_role": "Local Parisian"
-  },
-
-  {
-    "id": 8,
-    "title": "Market Bargaining",
-    "difficulty": "Hard",
-    "desc": "Buy a souvenir for a cheaper price.",
-    "target_role": "Loud Street Vendor"
-  },
-  {
-    "id": 4,
-    "title": "Negotiate rent",
-    "difficulty": "Expert",
-    "desc": "The landlord is raising the price.",
-    "target_role": "Strict Landlord"
-  },
-  {
-    "id": 9,
-    "title": "Job Interview",
-    "difficulty": "Expert",
-    "desc": "Explain your strengths and weaknesses.",
-    "target_role": "Company Recruiter"
-  }
-]
+{
+  "A1": [
+    {
+      "id": "a1-1",
+      "title": "Say Hello",
+      "desc": "Introduce yourself and ask how they are.",
+      "target_role": "Friendly Neighbor"
+    },
+    {
+      "id": "a1-2",
+      "title": "Order a Coffee",
+      "desc": "Order a coffee and a pastry at a cafe.",
+      "target_role": "Cafe Server"
+    },
+    {
+      "id": "a1-3",
+      "title": "Buy Groceries",
+      "desc": "Ask for bread, milk, and apples at a small shop.",
+      "target_role": "Shop Owner"
+    },
+    {
+      "id": "a1-4",
+      "title": "Ask the Time",
+      "desc": "You forgot your watch. Ask a stranger what time it is.",
+      "target_role": "Passerby"
+    },
+    {
+      "id": "a1-5",
+      "title": "Book a Table",
+      "desc": "Reserve a table for two people tonight.",
+      "target_role": "Restaurant Host"
+    },
+    {
+      "id": "a1-6",
+      "title": "At the Hotel",
+      "desc": "Check in and ask where your room is.",
+      "target_role": "Hotel Receptionist"
+    },
+    {
+      "id": "a1-7",
+      "title": "Family Photos",
+      "desc": "Describe your family members to a new friend.",
+      "target_role": "New Acquaintance"
+    },
+    {
+      "id": "a1-8",
+      "title": "Weather Chat",
+      "desc": "Talk about today's weather and what you'll do.",
+      "target_role": "Colleague"
+    },
+    {
+      "id": "a1-9",
+      "title": "Exam: Picture Description",
+      "desc": "Describe what you see in a simple picture (Goethe A1 style).",
+      "target_role": "Exam Partner"
+    },
+    {
+      "id": "a1-10",
+      "title": "Exam: Personal Questions",
+      "desc": "Answer questions about yourself: name, age, hobbies.",
+      "target_role": "Examiner"
+    }
+  ],
+  "A2": [
+    {
+      "id": "a2-1",
+      "title": "Buy a Train Ticket",
+      "desc": "Get a ticket to Munich, ask about departure times.",
+      "target_role": "Ticket Agent"
+    },
+    {
+      "id": "a2-2",
+      "title": "Doctor's Appointment",
+      "desc": "Describe your symptoms and ask for advice.",
+      "target_role": "Doctor"
+    },
+    {
+      "id": "a2-3",
+      "title": "Return a Product",
+      "desc": "The shirt doesn't fit. Ask for an exchange.",
+      "target_role": "Shop Assistant"
+    },
+    {
+      "id": "a2-4",
+      "title": "Apartment Viewing",
+      "desc": "Ask about the rent, rooms, and when you can move in.",
+      "target_role": "Landlord"
+    },
+    {
+      "id": "a2-5",
+      "title": "Birthday Invitation",
+      "desc": "Invite a friend to your birthday party.",
+      "target_role": "Friend"
+    },
+    {
+      "id": "a2-6",
+      "title": "Lost Luggage",
+      "desc": "Report your missing suitcase at the airport.",
+      "target_role": "Airport Staff"
+    },
+    {
+      "id": "a2-7",
+      "title": "Job Interests",
+      "desc": "Talk about your job and what you like about it.",
+      "target_role": "New Colleague"
+    },
+    {
+      "id": "a2-8",
+      "title": "Weekend Plans",
+      "desc": "Discuss what you did last weekend and future plans.",
+      "target_role": "Language Partner"
+    },
+    {
+      "id": "a2-9",
+      "title": "Exam: Making Plans",
+      "desc": "Plan a trip or activity with your partner (Goethe A2 style).",
+      "target_role": "Exam Partner"
+    },
+    {
+      "id": "a2-10",
+      "title": "Exam: Respond to a Situation",
+      "desc": "React appropriately to everyday situations.",
+      "target_role": "Examiner"
+    }
+  ],
+  "B1": [
+    {
+      "id": "b1-1",
+      "title": "Complain About Service",
+      "desc": "Your food order was wrong. Politely complain.",
+      "target_role": "Restaurant Manager"
+    },
+    {
+      "id": "b1-2",
+      "title": "Job Interview Basics",
+      "desc": "Introduce yourself and explain your experience.",
+      "target_role": "HR Manager"
+    },
+    {
+      "id": "b1-3",
+      "title": "Describe Your Hometown",
+      "desc": "Tell someone about where you grew up.",
+      "target_role": "Curious Local"
+    },
+    {
+      "id": "b1-4",
+      "title": "Cancel a Subscription",
+      "desc": "Call to cancel your gym membership.",
+      "target_role": "Customer Service"
+    },
+    {
+      "id": "b1-5",
+      "title": "Give Directions",
+      "desc": "Help a tourist find the main train station.",
+      "target_role": "Lost Tourist"
+    },
+    {
+      "id": "b1-6",
+      "title": "Discuss a Movie",
+      "desc": "Talk about a film you recently watched.",
+      "target_role": "Friend"
+    },
+    {
+      "id": "b1-7",
+      "title": "Report a Problem",
+      "desc": "Your heating is broken. Call the landlord.",
+      "target_role": "Property Manager"
+    },
+    {
+      "id": "b1-8",
+      "title": "Health Advice",
+      "desc": "Discuss healthy lifestyle habits.",
+      "target_role": "Fitness Coach"
+    },
+    {
+      "id": "b1-9",
+      "title": "Exam: Express Opinion",
+      "desc": "Share your view on a topic and give reasons (Goethe B1).",
+      "target_role": "Exam Partner"
+    },
+    {
+      "id": "b1-10",
+      "title": "Exam: Problem Solving",
+      "desc": "Work together to solve a practical problem (telc B1).",
+      "target_role": "Examiner"
+    }
+  ],
+  "B2": [
+    {
+      "id": "b2-1",
+      "title": "Negotiate Salary",
+      "desc": "Discuss your salary expectations in a job offer.",
+      "target_role": "HR Director"
+    },
+    {
+      "id": "b2-2",
+      "title": "Debate: Technology",
+      "desc": "Discuss pros and cons of social media.",
+      "target_role": "Discussion Partner"
+    },
+    {
+      "id": "b2-3",
+      "title": "Explain a Concept",
+      "desc": "Explain your field of work to a non-expert.",
+      "target_role": "Curious Friend"
+    },
+    {
+      "id": "b2-4",
+      "title": "Handle a Complaint",
+      "desc": "A customer is unhappy. Resolve the situation.",
+      "target_role": "Angry Customer"
+    },
+    {
+      "id": "b2-5",
+      "title": "University Application",
+      "desc": "Explain why you want to study in Germany.",
+      "target_role": "Admissions Officer"
+    },
+    {
+      "id": "b2-6",
+      "title": "Environmental Discussion",
+      "desc": "Discuss climate change and personal responsibility.",
+      "target_role": "Environmental Activist"
+    },
+    {
+      "id": "b2-7",
+      "title": "Conflict Resolution",
+      "desc": "Mediate between two colleagues who disagree.",
+      "target_role": "Upset Colleague"
+    },
+    {
+      "id": "b2-8",
+      "title": "News Discussion",
+      "desc": "Discuss a current news event and its implications.",
+      "target_role": "Informed Citizen"
+    },
+    {
+      "id": "b2-9",
+      "title": "Exam: Presentation",
+      "desc": "Give a short presentation on a given topic (Goethe B2).",
+      "target_role": "Examiner"
+    },
+    {
+      "id": "b2-10",
+      "title": "Exam: Discussion",
+      "desc": "Engage in a structured discussion with pros and cons (telc B2).",
+      "target_role": "Exam Partner"
+    }
+  ],
+  "C1": [
+    {
+      "id": "c1-1",
+      "title": "Business Negotiation",
+      "desc": "Negotiate contract terms with a business partner.",
+      "target_role": "Business Executive"
+    },
+    {
+      "id": "c1-2",
+      "title": "Academic Discussion",
+      "desc": "Discuss research methodology in your field.",
+      "target_role": "Professor"
+    },
+    {
+      "id": "c1-3",
+      "title": "Political Debate",
+      "desc": "Defend your position on immigration policy.",
+      "target_role": "Political Opponent"
+    },
+    {
+      "id": "c1-4",
+      "title": "Crisis Management",
+      "desc": "Lead a team meeting during a company crisis.",
+      "target_role": "Stressed Team Member"
+    },
+    {
+      "id": "c1-5",
+      "title": "Ethical Dilemma",
+      "desc": "Discuss an ethical problem in business or medicine.",
+      "target_role": "Ethics Committee Member"
+    },
+    {
+      "id": "c1-6",
+      "title": "Cultural Critique",
+      "desc": "Analyze a piece of German literature or film.",
+      "target_role": "Literature Professor"
+    },
+    {
+      "id": "c1-7",
+      "title": "Legal Consultation",
+      "desc": "Explain a complex legal situation to a client.",
+      "target_role": "Confused Client"
+    },
+    {
+      "id": "c1-8",
+      "title": "Scientific Explanation",
+      "desc": "Explain a complex scientific concept in simple terms.",
+      "target_role": "Journalist"
+    },
+    {
+      "id": "c1-9",
+      "title": "Exam: Synthesis Task",
+      "desc": "Summarize and respond to multiple viewpoints (TestDaF style).",
+      "target_role": "Examiner"
+    },
+    {
+      "id": "c1-10",
+      "title": "Exam: Spontaneous Speech",
+      "desc": "Speak fluently on an unexpected topic (Goethe C1).",
+      "target_role": "Examiner"
+    }
+  ]
+}
