@@ -78,7 +78,7 @@ class ViewChat extends HTMLElement {
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
         </button>
 
-      <div class="container" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: calc(100vh - 60px); position: relative; overflow: hidden; padding: var(--spacing-lg); gap: var(--spacing-md);">
+      <div class="container" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; position: relative; overflow: hidden; padding: var(--spacing-lg); gap: var(--spacing-md);">
 
         <div style="text-align: center;">
           <p style="font-size: 0.85rem; color: var(--color-text-sub); margin: 0 0 4px 0; text-transform: uppercase; letter-spacing: 0.05em;">${this._mission.target_role || "Target Person"}</p>

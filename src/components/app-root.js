@@ -34,21 +34,6 @@ class AppRoot extends HTMLElement {
         // Setup static layout once
         this.innerHTML = '';
 
-        // Simple header with logo
-        const header = document.createElement('header');
-        header.style.cssText = `
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: var(--spacing-md) var(--spacing-lg);
-            width: 100%;
-            background: var(--braun-light);
-            border-bottom: 1px solid var(--braun-mid);
-        `;
-
-        header.innerHTML = ``;
-
-        this.appendChild(header);
 
         // View Container
         this.viewContainer = document.createElement('div');

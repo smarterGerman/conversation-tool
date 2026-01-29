@@ -12,7 +12,7 @@ class ViewMissions extends HTMLElement {
         :host {
           display: block;
           width: 100%;
-          height: calc(100vh - 60px);
+          height: 100vh;
           overflow: hidden;
         }
 
@@ -111,6 +111,11 @@ class ViewMissions extends HTMLElement {
 
         .level-header:hover {
           background: var(--braun-light);
+        }
+
+        .level-content {
+          position: relative;
+          z-index: 3;
         }
 
         .level-info {
