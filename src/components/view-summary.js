@@ -108,16 +108,15 @@ class ViewSummary extends HTMLElement {
   }
   _renderScore(score) {
     const levels = [
-      { id: '1', title: 'Tiro', stars: 1 },
-      { id: '2', title: 'Proficiens', stars: 2 },
-      { id: '3', title: 'Peritus', stars: 3 }
+      { id: '1', title: 'Beginner', stars: 1 },
+      { id: '2', title: 'Intermediate', stars: 2 },
+      { id: '3', title: 'Fluent', stars: 3 }
     ];
 
-    const currentLevel = levels.find(l => l.id === score.toString()) || levels[0];
     const descriptions = {
-      '1': 'You needed a lot of help',
-      '2': 'A little help',
-      '3': 'No help, fluid'
+      '1': 'Needed help, but you tried!',
+      '2': 'Good conversation with minor mistakes',
+      '3': 'Excellent - natural and fluent!'
     };
 
     const starIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`;
