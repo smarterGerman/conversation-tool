@@ -454,9 +454,12 @@ Only call "complete_mission" when:
 - The user explicitly says goodbye or indicates they want to end
 - OR the conversation has naturally concluded after substantial practice (minimum 8-10 back-and-forth turns)
 
+CRITICAL: NEVER interrupt the user. Wait until the user has completely finished speaking and there is a clear pause before calling complete_mission. If the user is mid-sentence or still talking, do NOT end the conversation.
+
 When ending:
 1. Give a warm congratulatory message in ${language}, then translate the praise into ${fromLanguage}.
-2. THEN call the "complete_mission" tool.
+2. Wait for the user to respond or for clear silence.
+3. THEN call the "complete_mission" tool.
 3. Set 'score' to 0 (Zero) as this is a learning-focused practice session.
 4. Provide 3 specific takeaways (grammar tips or new words) in the feedback list in ${fromLanguage}.
 `;
@@ -489,9 +492,12 @@ Only call "complete_mission" when:
 - The user explicitly says goodbye or indicates they want to end
 - OR the conversation has naturally concluded after a substantial exchange (minimum 8-10 back-and-forth turns)
 
+CRITICAL: NEVER interrupt the user. Wait until the user has completely finished speaking and there is a clear pause before calling complete_mission. If the user is mid-sentence or still talking, do NOT end the conversation.
+
 When ending:
 1. Speak a brief congratulatory message (in character) and say goodbye.
-2. THEN call the "complete_mission" tool.
+2. Wait for the user to respond or for clear silence.
+3. THEN call the "complete_mission" tool.
 3. Assign a score based on strict criteria: 1 for struggling/English reliance (Tiro), 2 for capable but imperfect (Proficiens), 3 for native-level fluency (Peritus).
 4. Provide 3 specific pointers or compliments in the feedback list (in the user's native language: ${fromLanguage}).
 `;
