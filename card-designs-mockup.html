@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compact Card Designs - SmarterGerman</title>
+    <link href="https://fonts.googleapis.com/css2?family=Karla:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --braun-white: #E8E8E6;
+            --braun-light: #DCDCDA;
+            --braun-mid: #CCCCCA;
+            --braun-dark: #333333;
+            --braun-black: #222222;
+            --braun-orange: #F04E23;
+            --shadow-raised: 2px 2px 5px rgba(0,0,0,0.1), -2px -2px 5px #FFFFFF;
+            --shadow-pressed: inset 2px 2px 5px rgba(0,0,0,0.1), inset -2px -2px 5px #FFFFFF;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Karla', sans-serif;
+            background: var(--braun-white);
+            color: var(--braun-dark);
+            padding: 40px;
+            line-height: 1.5;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            color: var(--braun-black);
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+        }
+
+        .design-section {
+            margin-bottom: 60px;
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .design-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--braun-orange);
+        }
+
+        .design-desc {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        /* ================================================
+           DESIGN 1: Minimal List Items
+           ================================================ */
+        .design1-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .design1-card {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 12px 16px;
+            background: var(--braun-white);
+            border-radius: 6px;
+            box-shadow: var(--shadow-raised);
+            cursor: pointer;
+            transition: all 0.15s;
+            border-left: 3px solid transparent;
+        }
+
+        .design1-card:hover {
+            border-left-color: var(--braun-orange);
+            background: var(--braun-light);
+        }
+
+        .design1-difficulty {
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 3px 8px;
+            border-radius: 3px;
+            min-width: 50px;
+            text-align: center;
+        }
+
+        .design1-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+            flex: 1;
+        }
+
+        .design1-role {
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        /* ================================================
+           DESIGN 2: Compact Grid Chips
+           ================================================ */
+        .design2-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .design2-card {
+            padding: 10px 16px;
+            background: var(--braun-white);
+            border-radius: 20px;
+            box-shadow: var(--shadow-raised);
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .design2-card:hover {
+            box-shadow: var(--shadow-pressed);
+            background: var(--braun-light);
+        }
+
+        .design2-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .design2-title {
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        /* ================================================
+           DESIGN 3: Two-Column Compact
+           ================================================ */
+        .design3-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .design3-card {
+            padding: 14px;
+            background: var(--braun-white);
+            border-radius: 8px;
+            box-shadow: var(--shadow-raised);
+            cursor: pointer;
+            transition: all 0.15s;
+            border-left: 3px solid transparent;
+        }
+
+        .design3-card:hover {
+            border-left-color: var(--braun-orange);
+        }
+
+        .design3-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .design3-title {
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .design3-difficulty {
+            font-size: 0.6rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .design3-role {
+            font-size: 0.75rem;
+            color: var(--braun-orange);
+        }
+
+        /* ================================================
+           DESIGN 4: Icon-based Tiles
+           ================================================ */
+        .design4-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 12px;
+        }
+
+        .design4-card {
+            padding: 16px 12px;
+            background: var(--braun-white);
+            border-radius: 8px;
+            box-shadow: var(--shadow-raised);
+            cursor: pointer;
+            transition: all 0.15s;
+            text-align: center;
+        }
+
+        .design4-card:hover {
+            box-shadow: var(--shadow-pressed);
+            background: var(--braun-light);
+        }
+
+        .design4-icon {
+            font-size: 1.5rem;
+            margin-bottom: 6px;
+        }
+
+        .design4-title {
+            font-weight: 600;
+            font-size: 0.75rem;
+            line-height: 1.3;
+        }
+
+        .design4-difficulty {
+            font-size: 0.55rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-top: 6px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            display: inline-block;
+        }
+
+        /* Difficulty Colors */
+        .easy { background: #E8F5E9; color: #2E7D32; }
+        .medium { background: #FFF8E1; color: #F57F17; }
+        .hard { background: #FBE9E7; color: #D84315; }
+
+        .dot-easy { background: #2E7D32; }
+        .dot-medium { background: #F57F17; }
+        .dot-hard { background: #D84315; }
+
+        /* Mode Toggle (shared) */
+        .mode-toggle {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            margin-bottom: 20px;
+            background: var(--braun-light);
+            padding: 6px;
+            border-radius: 8px;
+            box-shadow: var(--shadow-pressed);
+            max-width: 300px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            background: transparent;
+            color: #888;
+            font-weight: 600;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .mode-btn.active {
+            background: var(--braun-white);
+            color: var(--braun-black);
+            box-shadow: var(--shadow-raised);
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid var(--braun-mid);
+            margin: 40px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Compact Card Designs</h1>
+    <p class="subtitle">4 options for mission selection - 80% smaller than current</p>
+
+    <!-- DESIGN 1 -->
+    <div class="design-section">
+        <h2 class="design-title">Design 1: Minimal List</h2>
+        <p class="design-desc">Single row per mission. Clean, scannable, efficient. Best for many scenarios.</p>
+
+        <div class="mode-toggle">
+            <button class="mode-btn active">Immersive</button>
+            <button class="mode-btn">With Guidance</button>
+        </div>
+
+        <div class="design1-grid">
+            <div class="design1-card">
+                <span class="design1-difficulty easy">Easy</span>
+                <span class="design1-title">Order a Coffee</span>
+                <span class="design1-role">Barista</span>
+            </div>
+            <div class="design1-card">
+                <span class="design1-difficulty easy">Easy</span>
+                <span class="design1-title">Buy a Bus Ticket</span>
+                <span class="design1-role">Ticket agent</span>
+            </div>
+            <div class="design1-card">
+                <span class="design1-difficulty medium">Medium</span>
+                <span class="design1-title">Book a dinner table</span>
+                <span class="design1-role">Restaurant host</span>
+            </div>
+            <div class="design1-card">
+                <span class="design1-difficulty medium">Medium</span>
+                <span class="design1-title">Return a Shirt</span>
+                <span class="design1-role">Shop assistant</span>
+            </div>
+            <div class="design1-card">
+                <span class="design1-difficulty hard">Hard</span>
+                <span class="design1-title">Ask for directions</span>
+                <span class="design1-role">Local pedestrian</span>
+            </div>
+        </div>
+    </div>
+
+    <hr>
+
+    <!-- DESIGN 2 -->
+    <div class="design-section">
+        <h2 class="design-title">Design 2: Pill Chips</h2>
+        <p class="design-desc">Ultra-compact pills. Quick selection, modern feel. Difficulty shown as colored dot.</p>
+
+        <div class="mode-toggle">
+            <button class="mode-btn active">Immersive</button>
+            <button class="mode-btn">With Guidance</button>
+        </div>
+
+        <div class="design2-grid">
+            <div class="design2-card">
+                <span class="design2-dot dot-easy"></span>
+                <span class="design2-title">Order a Coffee</span>
+            </div>
+            <div class="design2-card">
+                <span class="design2-dot dot-easy"></span>
+                <span class="design2-title">Buy a Bus Ticket</span>
+            </div>
+            <div class="design2-card">
+                <span class="design2-dot dot-medium"></span>
+                <span class="design2-title">Book a dinner table</span>
+            </div>
+            <div class="design2-card">
+                <span class="design2-dot dot-medium"></span>
+                <span class="design2-title">Return a Shirt</span>
+            </div>
+            <div class="design2-card">
+                <span class="design2-dot dot-hard"></span>
+                <span class="design2-title">Ask for directions</span>
+            </div>
+            <div class="design2-card">
+                <span class="design2-dot dot-hard"></span>
+                <span class="design2-title">Describe Symptoms</span>
+            </div>
+            <div class="design2-card">
+                <span class="design2-dot dot-medium"></span>
+                <span class="design2-title">Farmers Market</span>
+            </div>
+            <div class="design2-card">
+                <span class="design2-dot dot-hard"></span>
+                <span class="design2-title">Apartment viewing</span>
+            </div>
+        </div>
+    </div>
+
+    <hr>
+
+    <!-- DESIGN 3 -->
+    <div class="design-section">
+        <h2 class="design-title">Design 3: Two-Column Compact</h2>
+        <p class="design-desc">Balanced grid with title + role. Good compromise between info and space.</p>
+
+        <div class="mode-toggle">
+            <button class="mode-btn active">Immersive</button>
+            <button class="mode-btn">With Guidance</button>
+        </div>
+
+        <div class="design3-grid">
+            <div class="design3-card">
+                <div class="design3-header">
+                    <span class="design3-title">Order a Coffee</span>
+                    <span class="design3-difficulty easy">Easy</span>
+                </div>
+                <span class="design3-role">with Barista</span>
+            </div>
+            <div class="design3-card">
+                <div class="design3-header">
+                    <span class="design3-title">Buy a Bus Ticket</span>
+                    <span class="design3-difficulty easy">Easy</span>
+                </div>
+                <span class="design3-role">with Ticket agent</span>
+            </div>
+            <div class="design3-card">
+                <div class="design3-header">
+                    <span class="design3-title">Book a dinner table</span>
+                    <span class="design3-difficulty medium">Med</span>
+                </div>
+                <span class="design3-role">with Restaurant host</span>
+            </div>
+            <div class="design3-card">
+                <div class="design3-header">
+                    <span class="design3-title">Return a Shirt</span>
+                    <span class="design3-difficulty medium">Med</span>
+                </div>
+                <span class="design3-role">with Shop assistant</span>
+            </div>
+            <div class="design3-card">
+                <div class="design3-header">
+                    <span class="design3-title">Ask for directions</span>
+                    <span class="design3-difficulty hard">Hard</span>
+                </div>
+                <span class="design3-role">with Local pedestrian</span>
+            </div>
+            <div class="design3-card">
+                <div class="design3-header">
+                    <span class="design3-title">Describe Symptoms</span>
+                    <span class="design3-difficulty hard">Hard</span>
+                </div>
+                <span class="design3-role">with Doctor</span>
+            </div>
+        </div>
+    </div>
+
+    <hr>
+
+    <!-- DESIGN 4 -->
+    <div class="design-section">
+        <h2 class="design-title">Design 4: Icon Tiles</h2>
+        <p class="design-desc">Visual icons with minimal text. Playful, quick scanning. Uses emoji for context.</p>
+
+        <div class="mode-toggle">
+            <button class="mode-btn active">Immersive</button>
+            <button class="mode-btn">With Guidance</button>
+        </div>
+
+        <div class="design4-grid">
+            <div class="design4-card">
+                <div class="design4-icon">&#9749;</div>
+                <div class="design4-title">Order Coffee</div>
+                <span class="design4-difficulty easy">Easy</span>
+            </div>
+            <div class="design4-card">
+                <div class="design4-icon">&#128652;</div>
+                <div class="design4-title">Bus Ticket</div>
+                <span class="design4-difficulty easy">Easy</span>
+            </div>
+            <div class="design4-card">
+                <div class="design4-icon">&#127869;</div>
+                <div class="design4-title">Restaurant</div>
+                <span class="design4-difficulty medium">Med</span>
+            </div>
+            <div class="design4-card">
+                <div class="design4-icon">&#128085;</div>
+                <div class="design4-title">Return Item</div>
+                <span class="design4-difficulty medium">Med</span>
+            </div>
+            <div class="design4-card">
+                <div class="design4-icon">&#128506;</div>
+                <div class="design4-title">Directions</div>
+                <span class="design4-difficulty hard">Hard</span>
+            </div>
+            <div class="design4-card">
+                <div class="design4-icon">&#129298;</div>
+                <div class="design4-title">Doctor Visit</div>
+                <span class="design4-difficulty hard">Hard</span>
+            </div>
+            <div class="design4-card">
+                <div class="design4-icon">&#127822;</div>
+                <div class="design4-title">Market</div>
+                <span class="design4-difficulty medium">Med</span>
+            </div>
+            <div class="design4-card">
+                <div class="design4-icon">&#127968;</div>
+                <div class="design4-title">Apartment</div>
+                <span class="design4-difficulty hard">Hard</span>
+            </div>
+        </div>
+    </div>
+
+    <hr>
+
+    <div style="text-align: center; color: #888; font-size: 0.9rem; padding: 20px;">
+        <strong>Recommendation:</strong> Design 1 (List) for clarity, or Design 2 (Pills) for maximum compactness.<br>
+        Design 4 (Icons) if you want a more playful feel but requires emoji (which you wanted removed).
+    </div>
+
+</body>
+</html>

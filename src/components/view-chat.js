@@ -78,196 +78,120 @@ class ViewChat extends HTMLElement {
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
         </button>
 
-      <div class="container" style="justify-content: space-between; height: calc(100vh - 60px); position: relative; overflow: hidden; padding: var(--spacing-md);">
+      <div class="container" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: calc(100vh - 60px); position: relative; overflow: hidden; padding: var(--spacing-lg); gap: var(--spacing-md);">
 
         <div style="text-align: center;">
-          <h2 style="font-size: 1.1rem; margin-bottom: 0;">${this._mission.target_role || "Target Person"
-      }</h2>
-
-          <!-- Language Visibility Pill -->
-          <div style="
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: var(--color-text-sub);
-            margin-bottom: var(--spacing-xs);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            background: rgba(0,0,0,0.04);
-            padding: 2px 10px;
-            border-radius: var(--radius-full);
-            width: fit-content;
-            margin-left: auto;
-            margin-right: auto;
-            border: 1px solid rgba(0,0,0,0.05);
-          ">
-            <span>${this._fromLanguage}</span>
-            <span style="opacity: 0.3; font-weight: normal;">➔</span>
-            <span style="color: var(--color-accent-primary);">${this._language}</span>
-          </div>
-
-          <p style="font-size: 1rem; font-weight: bold; color: var(--color-accent-secondary); margin: 0;">${this._mission.title}</p>
-          <p style="font-size: 0.85rem; opacity: 0.9; margin: 2px 0 0 0; max-width: 500px; margin-left: auto; margin-right: auto;">${this._mission.desc}</p>
+          <p style="font-size: 0.85rem; color: var(--color-text-sub); margin: 0 0 4px 0; text-transform: uppercase; letter-spacing: 0.05em;">${this._mission.target_role || "Target Person"}</p>
+          <h2 style="font-size: 1.3rem; font-weight: bold; color: var(--braun-black); margin: 0;">${this._mission.title}</h2>
+          <p style="font-size: 0.9rem; color: var(--braun-dark); margin: 8px 0 0 0; max-width: 400px;">${this._mission.desc}</p>
           ${this._mode === "immergo_teacher"
         ? `
           <div style="
-            margin-top: var(--spacing-sm);
+            margin-top: var(--spacing-md);
             font-size: 0.8rem;
-            background: var(--color-surface);
-            color: var(--color-accent-primary);
-            padding: 4px 12px;
+            background: var(--braun-light);
+            color: var(--braun-dark);
+            padding: 6px 14px;
             border-radius: var(--radius-full);
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            border: 1px solid var(--color-accent-primary);
+            display: inline-block;
+            box-shadow: var(--shadow-pressed);
           ">
-            <span>Ask for <strong>translations</strong> & <strong>explanations</strong> anytime</span>
+            Ask for <strong>translations</strong> & <strong>explanations</strong> anytime
           </div>
           `
         : ""
       }
         </div>
 
-        <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; gap: 8px; min-height: 0;">
-          <!-- Model Visualizer (Top) -->
-          <div style="width: 100%; height: 80px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <div style="display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 500px; gap: var(--spacing-sm);">
+          <!-- Model Visualizer -->
+          <div style="width: 100%; height: 60px;">
              <audio-visualizer id="model-viz"></audio-visualizer>
           </div>
 
-          <!-- Transcript (Middle) -->
+          <!-- Transcript -->
           ${this._mode === "immergo_teacher"
         ? `
-            <div style="width: 100%; flex: 1; min-height: 100px; max-height: 180px; position: relative;">
+            <div style="width: 100%; height: 120px; position: relative;">
               <live-transcript></live-transcript>
             </div>
           `
         : ""
       }
 
-          <!-- User Visualizer (Bottom) -->
-           <div style="width: 100%; height: 80px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <!-- User Visualizer -->
+          <div style="width: 100%; height: 60px;">
              <audio-visualizer id="user-viz"></audio-visualizer>
           </div>
         </div>
 
         <style>
           .chat-cta-btn {
-            background: var(--color-accent-primary);
+            background: var(--braun-orange);
             color: white;
-            padding: 16px 36px;
-            border-radius: var(--radius-lg);
-            width: auto;
-            min-width: 220px;
-            border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 8px 24px -8px rgba(0,0,0,0.4),
-                        0 0 0 1px rgba(255,255,255,0.2) inset;
+            padding: 14px 32px;
+            border-radius: var(--radius-md);
+            border: none;
+            box-shadow: var(--shadow-raised);
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
+            gap: 8px;
             cursor: pointer;
-            z-index: 10;
-            transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
-            position: relative;
-            overflow: hidden;
+            transition: all 0.15s ease;
             font-family: var(--font-body);
           }
 
           .chat-cta-btn:hover {
-            transform: translateY(-5px) scale(1.02);
             filter: brightness(1.1);
-            box-shadow: 0 20px 40px -10px rgba(163, 177, 138, 0.4),
-                        0 0 0 2px rgba(255,255,255,0.3) inset;
+            box-shadow: var(--shadow-lg);
           }
 
           .chat-cta-btn:active {
-            transform: translateY(-2px) scale(0.98);
-          }
-
-          .chat-cta-btn::after {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; width: 200%; height: 100%;
-            background: linear-gradient(115deg, transparent 0%, transparent 45%, rgba(255, 255, 255, 0.3) 50%, transparent 55%, transparent 100%);
-            transform: translateX(-150%) skewX(-15deg);
-            transition: transform 0.6s;
-          }
-
-          .chat-cta-btn:hover::after {
-            transform: translateX(150%) skewX(-15deg);
+            box-shadow: var(--shadow-pressed);
           }
 
           .chat-cta-btn.active {
-            background: var(--color-danger) !important;
-            flex-direction: row !important;
-            gap: 12px;
+            background: var(--color-danger);
           }
         </style>
 
-        <div style="display: flex; flex-direction: column; gap: var(--spacing-sm); align-items: center; padding-bottom: var(--spacing-md);">
-
+        <div style="display: flex; flex-direction: column; gap: var(--spacing-xs); align-items: center;">
            <button id="mic-btn" class="chat-cta-btn">
-            <span style="font-size: 1.1rem; font-weight: 800; margin-bottom: 2px; letter-spacing: 0.02em;">Start Mission</span>
-            <span style="font-size: 0.8rem; opacity: 0.9; font-style: italic;">You start the conversation!</span>
+            <span style="font-size: 1rem; font-weight: 800; letter-spacing: 0.02em;">Start Conversation</span>
           </button>
-
            <p id="connection-status" style="
              margin: 0;
-             font-size: 0.8rem;
-             font-weight: 700;
+             font-size: 0.75rem;
+             font-weight: 600;
              height: 1.2em;
-             transition: all 0.3s ease;
-             letter-spacing: 0.05em;
-             text-transform: uppercase;
+             color: var(--color-text-sub);
            "></p>
         </div>
 
         <!-- Rate Limit Dialog -->
         <div id="rate-limit-dialog" class="hidden" style="
-            position: fixed; inset: 0; 
-            background: rgba(0,0,0,0.8); 
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.6);
             backdrop-filter: blur(4px);
             z-index: 20;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
         ">
-            <div style="background: white; color: var(--color-text-primary); padding: var(--spacing-xl); border-radius: var(--radius-lg); max-width: 500px; text-align: center; box-shadow: var(--shadow-lg);">
-                <h3 style="margin-bottom: var(--spacing-md); color: var(--color-accent-primary);">Opps, this is too popular!</h3>
-                <p style="margin-bottom: var(--spacing-lg); line-height: 1.5;">
-                    The global quota has been reached. But you can skip the queue by deploying your own version on Google Cloud Run!
+            <div style="background: var(--braun-white); color: var(--braun-black); padding: var(--spacing-xl); border-radius: var(--radius-lg); max-width: 400px; text-align: center; box-shadow: var(--shadow-lg);">
+                <h3 style="margin-bottom: var(--spacing-sm); color: var(--braun-dark);">Service Busy</h3>
+                <p style="margin-bottom: var(--spacing-lg); line-height: 1.5; color: var(--color-text-sub);">
+                    Too many conversations happening right now. Please try again in a moment.
                 </p>
-                <div style="display: flex; flex-direction: column; gap: var(--spacing-md); margin-bottom: var(--spacing-lg);">
-                     <a href="https://deploy.cloud.run/?git_repo=https://github.com/ZackAkil/immersive-language-learning-with-live-api&utm_source=github&utm_medium=unpaidsoc&utm_campaign=FY-Q1-global-cloud-ai-starter-apps&utm_content=immergo-app&utm_term=-" target="_blank" style="
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        gap: 12px;
-                        padding: 16px 32px;
-                        border-radius: var(--radius-md);
-                        color: #1a73e8;
-                        background: rgba(26, 115, 232, 0.05);
-                        text-decoration: none;
-                        font-weight: 800;
-                        box-shadow: 0 4px 15px rgba(26, 115, 232, 0.1);
-                        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-                        font-size: 1.1rem;
-                        white-space: nowrap;
-                        border: 2px dashed #1a73e8;
-                     " onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 8px 25px rgba(26, 115, 232, 0.2)'; this.style.background='rgba(26, 115, 232, 0.1)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(26, 115, 232, 0.1)'; this.style.background='rgba(26, 115, 232, 0.05)';" >
-                        <img src="https://www.gstatic.com/images/branding/product/1x/google_cloud_48dp.png" width="24" height="24" alt="Cloud Run Logo" />
-                        Deploy to Cloud Run
-                     </a>
-                </div>
                 <button id="close-rate-limit" style="
-                    background: var(--color-accent-primary);
+                    background: var(--braun-orange);
                     color: white;
                     border: none;
-                    padding: var(--spacing-sm) var(--spacing-xl);
-                    border-radius: var(--radius-full);
+                    padding: 12px 24px;
+                    border-radius: var(--radius-md);
                     cursor: pointer;
-                    font-weight: bold;
-                ">Got it</button>
+                    font-weight: 700;
+                    box-shadow: var(--shadow-raised);
+                ">OK</button>
             </div>
         </div>
 
@@ -474,10 +398,7 @@ class ViewChat extends HTMLElement {
       if (isSpeaking) {
         micBtn.classList.add('active');
         // Change to Stop/Listening state
-        micBtn.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
-            <span style="font-weight: 800; font-size: 1rem; letter-spacing: 0.05em; text-transform: uppercase;">End Mission</span>
-        `;
+        micBtn.innerHTML = `<span style="font-size: 1rem; font-weight: 800; letter-spacing: 0.02em;">End Conversation</span>`;
       } else {
         // Was active, so stopping now
         micBtn.classList.remove('active');
@@ -595,10 +516,7 @@ When the user has successfully achieved the mission objective declared in the sc
             // For now, let's stop to be safe.
             isSpeaking = false;
             micBtn.classList.remove('active');
-            micBtn.innerHTML = `
-                <span style="font-size: 1.1rem; font-weight: 800; margin-bottom: 2px; letter-spacing: 0.02em;">Start Mission</span>
-                <span style="font-size: 0.8rem; opacity: 0.9; font-style: italic;">You start the conversation!</span>
-            `;
+            micBtn.innerHTML = `<span style="font-size: 1rem; font-weight: 800; letter-spacing: 0.02em;">Start Conversation</span>`;
             userViz.disconnect();
             modelViz.disconnect();
             statusEl.textContent = "";

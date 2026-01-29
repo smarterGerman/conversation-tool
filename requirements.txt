@@ -8,3 +8,4 @@ google-cloud-recaptcha-enterprise==1.19.0
 google-cloud-bigquery==3.30.0
 redis==7.1.0
 slowapi==0.1.9
+starlette==0.45.3

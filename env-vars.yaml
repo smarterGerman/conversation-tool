@@ -1,0 +1,5 @@
+PROJECT_ID: smartergerman-conversation
+LOCATION: us-central1
+DEV_MODE: "false"
+CORS_ORIGINS: "https://learn.smartergerman.com,https://courses.smartergerman.com"
+ALLOWED_FRAME_ANCESTORS: "https://learn.smartergerman.com,https://courses.smartergerman.com"

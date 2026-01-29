@@ -1,0 +1,5 @@
+{
+  "content": {
+    "raw": "<h2>AI Conversation Practice</h2>\n<p>Practice real German conversations with our AI tutor. Select a scenario and start speaking naturally - the AI will respond in real-time, helping you improve your conversational skills.</p>\n\n<div style=\"margin: 20px 0; padding: 16px 24px; border-left: 3px solid #D97706; background: none;\">\n<strong style=\"color: #2C2C2C\">Before You Start</strong>\n<p style=\"margin: 8px 0 0 0;\">Make sure to allow microphone access when prompted. Speak clearly and at a natural pace.</p>\n</div>\n\n<div style=\"background: #FAFAF9; border-radius: 12px; padding: 8px; margin: 24px 0;\">\n<iframe src=\"https://conversation-tool-778842529296.us-central1.run.app\" width=\"100%\" height=\"1000\" style=\"border: none; border-radius: 8px; min-height: 90vh;\" allow=\"microphone *\"></iframe>\n</div>\n\n<p style=\"color: #D97706; font-size: 1.1rem; font-weight: 600; font-style: italic; margin: 1.5rem 0 1.5rem 0;\">\"The more you speak, the more natural it becomes.\"</p>"
+  }
+}

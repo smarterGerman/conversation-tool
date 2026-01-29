@@ -17,19 +17,22 @@ import os
 import datetime
 import json
 import inspect
+import logging
 from functools import wraps
 from google.cloud import bigquery
 from dotenv import load_dotenv
 
 load_dotenv(override=True)
 
+logger = logging.getLogger(__name__)
+
 # Configuration
 # You can override these with environment variables
 PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT", "your-project-id")
-DATASET_ID = os.environ.get("BQ_DATASET", "your-dataset-name") 
+DATASET_ID = os.environ.get("BQ_DATASET", "your-dataset-name")
 TABLE_ID = os.environ.get("BQ_TABLE", "your-table-name")
 DEMO_NAME = os.environ.get("DEMO_NAME", "your-app-name")
-DEV_MODE = os.environ.get("DEV_MODE", "true") == "true"
+DEV_MODE = os.environ.get("DEV_MODE", "false") == "true"
 class SimpleTracker:
     def __init__(self, demo_name=DEMO_NAME):
         self.demo_name = demo_name
@@ -41,16 +44,17 @@ class SimpleTracker:
             try:
                 self.client = bigquery.Client(project=PROJECT_ID)
             except Exception as e:
-                print(f"Warning: Could not initialize BigQuery client: {e}")
+                logger.warning("Could not initialize BigQuery client: %s", e)
         return self.client
 
     def _log_event(self, event_type, metadata=None):
         if DEV_MODE:
-            print(f"🔧 DEV_MODE: Skipped BigQuery logging for '{event_type}'")
+            logger.debug("DEV_MODE: Skipped BigQuery logging for '%s'", event_type)
             return
 
         client = self._get_client()
         if not client:
+            logger.warning("BigQuery client not available, skipping event: %s", event_type)
             return
 
         rows = [{
@@ -64,12 +68,12 @@ class SimpleTracker:
             # insert_rows_json automatically handles the request
             errors = client.insert_rows_json(self.table_ref, rows)
             if errors:
-                print(f"BigQuery Insert Errors: {errors}")
+                logger.error("BigQuery insert errors for event '%s': %s", event_type, errors)
             else:
-                print(f"Logged event '{event_type}' to BigQuery")
+                logger.debug("Logged event '%s' to BigQuery", event_type)
         except Exception as e:
-            # Fail silently so we don't break the app
-            print(f"BigQuery Error: {e}")
+            # Log but don't break the app - analytics shouldn't block the main flow
+            logger.error("BigQuery error logging event '%s': %s", event_type, e)
 
     def __call__(self, event_type, metadata=None):
         def decorator(func):
