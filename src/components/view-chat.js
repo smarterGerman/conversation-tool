@@ -152,7 +152,8 @@ class ViewChat extends HTMLElement {
           }
 
           .chat-cta-btn.active {
-            background: var(--color-danger);
+            background: var(--braun-dark);
+            color: var(--braun-white);
           }
         </style>
 
