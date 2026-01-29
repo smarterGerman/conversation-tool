@@ -115,24 +115,25 @@ class ViewMissions extends HTMLElement {
         /* Difficulty badge */
         .difficulty-badge {
           flex-shrink: 0;
-          padding: 3px 8px;
+          padding: 4px 10px;
           border-radius: var(--radius-sm);
-          font-size: 0.65rem;
+          font-size: 0.7rem;
           font-weight: 700;
           text-transform: uppercase;
-          letter-spacing: 0.3px;
-          min-width: 48px;
+          letter-spacing: 0.5px;
+          min-width: 54px;
           text-align: center;
         }
 
-        .difficulty-easy { background: #E8F5E9; color: #2E7D32; }
-        .difficulty-medium { background: #FFF8E1; color: #F57F17; }
-        .difficulty-hard { background: #FBE9E7; color: #D84315; }
+        .difficulty-easy { background: #C8E6C9; color: #1B5E20; }
+        .difficulty-medium { background: #FFE082; color: #E65100; }
+        .difficulty-hard { background: #FFAB91; color: #BF360C; }
 
         /* Scenario text */
         .scenario-text {
           flex: 1;
           min-width: 0;
+          text-align: left;
         }
 
         .scenario-title {
