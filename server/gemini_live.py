@@ -131,12 +131,12 @@ class GeminiLive:
                     pass
 
             async def keepalive():
-                """Send silent audio every 15 seconds to prevent idle timeout"""
+                """Send silent audio every 50 seconds to prevent premature idle timeout"""
                 # 16000 Hz * 16-bit = 32000 bytes/sec, 0.1 sec = 3200 bytes of silence
                 silence = bytes(3200)
                 try:
                     while True:
-                        await asyncio.sleep(15)
+                        await asyncio.sleep(50)
                         await session.send_realtime_input(
                             audio=types.Blob(data=silence, mime_type=f"audio/pcm;rate={self.input_sample_rate}")
                         )
