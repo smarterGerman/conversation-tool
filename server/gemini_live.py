@@ -130,6 +130,19 @@ class GeminiLive:
                 except asyncio.CancelledError:
                     pass
 
+            async def keepalive():
+                """Send silent audio every 15 seconds to prevent idle timeout"""
+                # 16000 Hz * 16-bit = 32000 bytes/sec, 0.1 sec = 3200 bytes of silence
+                silence = bytes(3200)
+                try:
+                    while True:
+                        await asyncio.sleep(15)
+                        await session.send_realtime_input(
+                            audio=types.Blob(data=silence, mime_type=f"audio/pcm;rate={self.input_sample_rate}")
+                        )
+                except asyncio.CancelledError:
+                    pass
+
             async def send_video():
                 # Not heavily used in Immergo yet, but good to have
                 try:
@@ -262,6 +275,7 @@ class GeminiLive:
             send_video_task = asyncio.create_task(send_video())
             send_text_task = asyncio.create_task(send_text())
             receive_task = asyncio.create_task(receive_loop())
+            keepalive_task = asyncio.create_task(keepalive())
 
             try:
                 while True:
@@ -274,3 +288,4 @@ class GeminiLive:
                 send_video_task.cancel()
                 send_text_task.cancel()
                 receive_task.cancel()
+                keepalive_task.cancel()
