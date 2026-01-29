@@ -1,5 +1,11 @@
+/**
+ * SmarterGerman Conversation Tool
+ * Design System: Braun 60s
+ * Inspired by Dieter Rams
+ */
+
+/* Box sizing reset */
 :root {
-  /* Box sizing reset */
   box-sizing: border-box;
 }
 
@@ -10,153 +16,155 @@
 }
 
 :root {
-  /* Colors - Mystic Archive (Dark Default) */
-    --color-bg: #0a0b10;
-    /* Deep Blue-Black */
-    --color-surface: rgba(22, 24, 34, 0.6);
-    /* Glassy Surface */
-    --color-surface-solid: #161822;
-    /* Fallback */
-    --color-text-main: #eaddcf;
-    /* Warm Paper White */
-    --color-text-sub: #949ba4;
-    /* Cool Gray */
-  
-    /* Accents */
-    --color-accent-primary: #a3b18a;
-    /* Golden Sage */
-    --color-accent-secondary: #d4a373;
-    /* Leather/Gold */
-    --color-accent-glow: rgba(163, 177, 138, 0.15);
-  
-    /* Functional */
-    --color-danger: #e57373;
-    --color-success: #81c784;
-    --texture-opacity: 0.03;
+  /* Braun 60s Palette */
+  --braun-white: #E8E8E6;
+  --braun-light: #DCDCDA;
+  --braun-mid: #CCCCCA;
+  --braun-dark: #333333;
+  --braun-black: #222222;
+
+  /* Safety Orange - The Accent */
+  --braun-orange: #F04E23;
+  --braun-orange-dark: #D4421D;
+  --braun-orange-glow: rgba(240, 78, 35, 0.4);
+
+  /* Functional */
+  --braun-success: #4A7C59;
+  --braun-warning: #D4A84B;
+  --braun-info: #5B8BA0;
+  --braun-danger: #C44536;
+
+  /* Semantic mapping */
+  --color-bg: var(--braun-white);
+  --color-surface: var(--braun-light);
+  --color-surface-solid: var(--braun-white);
+  --color-text-main: var(--braun-dark);
+  --color-text-sub: #666666;
+  --color-accent-primary: var(--braun-orange);
+  --color-accent-secondary: var(--braun-orange-dark);
 
   /* Typography */
-  --font-heading: 'Libre Baskerville', serif;
-  --font-body: 'Nunito', sans-serif;
+  --font-primary: 'Karla', -apple-system, BlinkMacSystemFont, sans-serif;
 
   /* Spacing */
   --spacing-xs: 4px;
   --spacing-sm: 8px;
   --spacing-md: 16px;
   --spacing-lg: 24px;
-  --spacing-xl: 32px;
-  --spacing-xxl: 64px;
+  --spacing-xl: 40px;
+  --spacing-xxl: 60px;
 
   /* Border Radius */
-  --radius-sm: 8px;
-  --radius-md: 16px;
-    /* Slightly rounder */
-    --radius-lg: 24px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
   --radius-full: 9999px;
 
-  /* Effects */
-    --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 10px 30px -5px rgba(0, 0, 0, 0.4);
-    --shadow-glow: 0 0 20px var(--color-accent-glow);
-    --glass-border: 1px solid rgba(255, 255, 255, 0.08);
-    --backdrop-blur: blur(12px);
-  }
-  
-  /* Light Mode Override - Fresh Parchment */
-  .light-mode {
-    --color-bg: #f5f2eb;
-    /* Creamy Parchment */
-    --color-surface: rgba(255, 255, 255, 0.85);
-    /* More opaque */
-    --color-surface-solid: #ffffff;
-    --color-text-main: #2c2420;
-    /* Dark Ink */
-    --color-text-sub: #5e5048;
-    /* Sepia Gray */
-  
-    --color-accent-primary: #5c6b48;
-    /* Deep Olive */
-    --color-accent-secondary: #000000;
-    /* Distinct Black for strong headers/actions */
-    /* Aged Wood */
-    --color-accent-glow: rgba(92, 107, 72, 0.2);
-  
-    --texture-opacity: 0.15;
-    --glass-border: 1px solid rgba(0, 0, 0, 0.08);
-    /* Stronger border */
-    --shadow-sm: 0 4px 6px -1px rgba(44, 36, 32, 0.1);
-    --shadow-md: 0 10px 30px -5px rgba(44, 36, 32, 0.12);
+  /* Neumorphic Shadows - The Tactile Magic */
+  --shadow-raised: 2px 2px 5px rgba(0,0,0,0.1), -2px -2px 5px #FFFFFF;
+  --shadow-pressed: inset 2px 2px 5px rgba(0,0,0,0.1), inset -2px -2px 5px #FFFFFF;
+  --shadow-card: 0 4px 12px rgba(0,0,0,0.08);
+  --shadow-hover: 0 8px 24px rgba(0,0,0,0.12);
+  --shadow-sm: var(--shadow-raised);
+  --shadow-md: var(--shadow-card);
 }
 
-/* Paper Texture */
+/* Base */
 body {
-  background-color: var(--color-bg);
-  /* Realistic Paper Texture: Turbulence + Diffuse Lighting */
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' opacity='1'%3E%3Cfilter id='paper' x='0%25' y='0%25' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' result='noise'/%3E%3CfeDiffuseLighting in='noise' lighting-color='white' surfaceScale='2'%3E%3CfeDistantLight azimuth='45' elevation='60'/%3E%3C/feDiffuseLighting%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23paper)'/%3E%3C/svg%3E");
-  background-blend-mode: multiply;
+  background: var(--color-bg);
   color: var(--color-text-main);
-  font-family: var(--font-body);
+  font-family: var(--font-primary);
   margin: 0;
   padding: 0;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
-  overflow-x: hidden;
-  position: relative;
-  }
-  
-  /* Texture Overlay to handle opacity via CSS var */
-  body::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    background-image: inherit;
-    opacity: var(--texture-opacity);
-    z-index: -1;
-  }
-  
-  /* IMPORTANT: We need to remove background-image from body itself if we use the pseudo-element method for opacity, 
-           OR we can just update the SVG opacity in the URL if we wanted dynamic URL (harder in pure CSS). 
-           Actually, simplified approach: Let's apply the opacity to the blend mode or use an overlay.
-           Better: Use a pseudo-element for the texture entirely so we can control opacity.
-        */
-  body {
-    background-image: none;
-    /* Remove direct image */
-    background-color: var(--color-bg);
+  line-height: 1.7;
+  font-size: 16px;
 }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  font-family: var(--font-heading);
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-primary);
   font-weight: 700;
   margin: 0 0 var(--spacing-md) 0;
-  color: var(--color-text-main);
+  color: var(--braun-black);
+  letter-spacing: -0.5px;
+  line-height: 1.3;
 }
+
+h1 { font-size: 2rem; }
+h2 { font-size: 1.5rem; }
+h3 { font-size: 1.25rem; }
 
 p {
-  line-height: 1.6;
+  line-height: 1.8;
   margin-bottom: var(--spacing-md);
   color: var(--color-text-sub);
+  max-width: 600px;
 }
 
+a {
+  color: var(--braun-orange);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: var(--braun-orange-dark);
+}
+
+/* Buttons */
 button {
   cursor: pointer;
   border: none;
-  font-family: var(--font-body);
+  font-family: var(--font-primary);
+  transition: all 0.15s ease;
+}
+
+/* Primary Button - The Iconic Round CTA */
+.btn-primary,
+button.primary {
+  background: var(--braun-orange);
+  color: white;
+  border: none;
+  border-radius: var(--radius-full);
+  padding: 16px 32px;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  box-shadow: 0 5px 15px var(--braun-orange-glow);
   transition: all 0.2s ease;
 }
 
-/* Utilities */
+.btn-primary:hover,
+button.primary:hover {
+  background: var(--braun-orange-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px var(--braun-orange-glow);
+}
+
+/* Secondary Button */
+.btn-secondary {
+  background: var(--braun-white);
+  color: var(--braun-dark);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 12px 24px;
+  font-weight: 600;
+  box-shadow: var(--shadow-raised);
+}
+
+.btn-secondary:hover {
+  box-shadow: var(--shadow-card);
+}
+
+.btn-secondary:active {
+  box-shadow: var(--shadow-pressed);
+}
+
+/* Layout */
 .container {
-  max-width: 520px;
-    /* Slightly wider for elegance */
+  max-width: 600px;
   margin: 0 auto;
   padding: var(--spacing-lg);
   min-height: 100vh;
@@ -164,14 +172,52 @@ button {
   flex-direction: column;
 }
 
-.glass-panel {
-  background: var(--color-surface);
-  backdrop-filter: var(--backdrop-blur);
-  -webkit-backdrop-filter: var(--backdrop-blur);
-  border: var(--glass-border);
-  box-shadow: var(--shadow-sm);
-  border-radius: var(--radius-lg);
+/* Cards - Neumorphic Style */
+.card {
+  background: var(--braun-white);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-raised);
+  transition: all 0.15s ease;
+  border-left: 4px solid transparent;
 }
+
+.card:hover {
+  box-shadow: var(--shadow-card);
+}
+
+.card.active,
+.card:active {
+  box-shadow: var(--shadow-pressed);
+  border-left-color: var(--braun-orange);
+  background: var(--braun-light);
+}
+
+/* Recessed Panel (for widgets) */
+.panel {
+  background: var(--braun-light);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-pressed);
+}
+
+/* Glass panel compatibility (maps to panel) */
+.glass-panel {
+  background: var(--braun-light);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-pressed);
+  border: none;
+}
+
+/* Grid */
+.mission-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+}
+
+/* Utilities */
 .text-center {
   text-align: center;
 }
@@ -186,42 +232,12 @@ button {
   display: none !important;
 }
 
-/* Component Specific */
-/* Component Specific */
-.mission-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: var(--spacing-lg);
-  margin-bottom: var(--spacing-xl);
-}
-.card {
-  background: var(--color-surface);
-  backdrop-filter: var(--backdrop-blur);
-    -webkit-backdrop-filter: var(--backdrop-blur);
-    border: var(--glass-border);
-    border-radius: var(--radius-lg);
-    padding: var(--spacing-lg);
-  box-shadow: var(--shadow-sm);
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-  }
-  
-  .card:hover {
-    transform: translateY(-5px) scale(1.02);
-    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3), var(--shadow-glow);
-    border-color: var(--color-accent-primary);
-    z-index: 10;
-}
-
 /* Animations */
 @keyframes fadeIn {
   from {
     opacity: 0;
     transform: translateY(10px);
   }
-
   to {
     opacity: 1;
     transform: translateY(0);
@@ -229,5 +245,50 @@ button {
 }
 
 .fade-in {
-  animation: fadeIn 0.7s ease-out forwards;
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+/* Form Elements */
+input[type="text"],
+input[type="email"],
+select {
+  background: var(--braun-white);
+  border: 1px solid var(--braun-mid);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  font-family: var(--font-primary);
+  font-size: 1rem;
+  box-shadow: var(--shadow-pressed);
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+input:focus,
+select:focus {
+  outline: none;
+  border-color: var(--braun-orange);
+  box-shadow: 0 0 0 3px var(--braun-orange-glow);
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--braun-light);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--braun-mid);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--braun-dark);
+}
+
+/* Remove light-mode class toggle - single theme now */
+.light-mode {
+  /* No changes needed - already light */
 }

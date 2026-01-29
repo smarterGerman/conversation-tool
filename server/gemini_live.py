@@ -29,11 +29,8 @@ class GeminiLive:
         self.location = location
         self.model = model
         self.input_sample_rate = input_sample_rate
-        print("🚀 GeminiLive initialized with:")
-        print(f"  Project ID: {project_id}")
-        print(f"  Location: {location}")
-        print(f"  Model: {model}")
-        print(f"  Input Sample Rate: {input_sample_rate}")
+        logger.info("GeminiLive initialized with: project=%s, location=%s, model=%s, sample_rate=%d",
+                    project_id, location, model, input_sample_rate)
         
         # Initialize client
         self.client = genai.Client(vertexai=True, project=project_id, location=location)
@@ -56,7 +53,7 @@ class GeminiLive:
         Connects to Gemini Live and proxies data between queues/callbacks and the session.
         """
 
-        print("⚡️ setup_config", json.dumps(setup_config, indent=4))
+        logger.debug("Setup config received: %s", json.dumps(setup_config, indent=2) if setup_config else "None")
 
         config_args = {
             "response_modalities": [types.Modality.AUDIO]
@@ -111,11 +108,11 @@ class GeminiLive:
                     logger.warning(f"Error parsing tools config: {e}")
 
         # Config output transcription
-        if "output_audio_transcription" in setup_config:
-            print("💬 output_audio_transcription ENABLED")
+        if setup_config and "output_audio_transcription" in setup_config:
+            logger.debug("Output audio transcription enabled")
             config_args["output_audio_transcription"] = types.AudioTranscriptionConfig()
-        if "input_audio_transcription" in setup_config:
-            print("💬 input_audio_transcription ENABLED")
+        if setup_config and "input_audio_transcription" in setup_config:
+            logger.debug("Input audio transcription enabled")
             config_args["input_audio_transcription"] = types.AudioTranscriptionConfig()
 
         config = types.LiveConnectConfig(**config_args)
@@ -189,7 +186,7 @@ class GeminiLive:
                                 
                                 if server_content.output_transcription:
                                     # Model output transcription
-                                    print("output_transcription", server_content.output_transcription)
+                                    logger.debug("Output transcription: %s", server_content.output_transcription.text)
                                     await event_queue.put({
                                         "serverContent": {
                                             "outputTranscription": {

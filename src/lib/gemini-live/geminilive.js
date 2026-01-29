@@ -49,17 +49,17 @@ export class MultimodalLiveResponseMessage {
 
     try {
       if (data?.setupComplete) {
-        console.log("🏁 SETUP COMPLETE response", data);
+        console.log("SETUP COMPLETE response", data);
         this.type = MultimodalLiveResponseType.SETUP_COMPLETE;
       } else if (data?.serverContent?.turnComplete) {
-        console.log("🏁 TURN COMPLETE response");
+        console.log("TURN COMPLETE response");
         this.type = MultimodalLiveResponseType.TURN_COMPLETE;
       } else if (data?.serverContent?.interrupted) {
-        console.log("🗣️ INTERRUPTED response");
+        console.log("INTERRUPTED response");
         this.type = MultimodalLiveResponseType.INTERRUPTED;
       } else if (data?.serverContent?.inputTranscription) {
         console.log(
-          "📝 INPUT TRANSCRIPTION:",
+          "INPUT TRANSCRIPTION:",
           data.serverContent.inputTranscription
         );
         this.type = MultimodalLiveResponseType.INPUT_TRANSCRIPTION;
@@ -69,7 +69,7 @@ export class MultimodalLiveResponseMessage {
         };
       } else if (data?.serverContent?.outputTranscription) {
         console.log(
-          "📝 OUTPUT TRANSCRIPTION:",
+          "OUTPUT TRANSCRIPTION:",
           data.serverContent.outputTranscription
         );
         this.type = MultimodalLiveResponseType.OUTPUT_TRANSCRIPTION;
@@ -78,20 +78,20 @@ export class MultimodalLiveResponseMessage {
           finished: data.serverContent.outputTranscription.finished || false,
         };
       } else if (data?.toolCall) {
-        console.log("🎯 🛠️ TOOL CALL response", data?.toolCall);
+        console.log("TOOL CALL response", data?.toolCall);
         this.type = MultimodalLiveResponseType.TOOL_CALL;
         this.data = data?.toolCall;
       } else if (parts?.length && parts[0].text) {
-        console.log("💬 TEXT response", parts[0].text);
+        console.log("TEXT response", parts[0].text);
         this.data = parts[0].text;
         this.type = MultimodalLiveResponseType.TEXT;
       } else if (parts?.length && parts[0].inlineData) {
-        console.log("🔊 AUDIO response");
+        console.log("AUDIO response");
         this.data = parts[0].inlineData.data;
         this.type = MultimodalLiveResponseType.AUDIO;
       }
     } catch {
-      console.log("⚠️ Error parsing response data: ", data);
+      console.log("Error parsing response data: ", data);
     }
   }
 }
@@ -108,7 +108,7 @@ export class FunctionCallDefinition {
   }
 
   functionToCall(parameters) {
-    console.log("▶️Default function call");
+    console.log("Default function call");
   }
 
   getDefinition() {
@@ -123,7 +123,7 @@ export class FunctionCallDefinition {
 
   runFunction(parameters) {
     console.log(
-      `⚡ Running ${this.name} function with parameters: ${JSON.stringify(
+      `Running ${this.name} function with parameters: ${JSON.stringify(
         parameters
       )}`
     );
@@ -174,7 +174,7 @@ export class GeminiLiveAPI {
     };
 
     this.onErrorMessage = (message) => {
-      console.error("❌ [GeminiLiveAPI] Error:", message);
+      console.error("[GeminiLiveAPI] Error:", message);
       alert(message);
       this.connected = false;
     };
@@ -338,7 +338,7 @@ export class GeminiLiveAPI {
   }
 
   getFunctionDefinitions() {
-    console.log("🛠️ getFunctionDefinitions called");
+    console.log("getFunctionDefinitions called");
     const tools = [];
 
     for (let index = 0; index < this.functions.length; index++) {
@@ -426,7 +426,7 @@ export class GeminiLiveAPI {
         response: response,
       },
     };
-    console.log("🔧 Sending tool response:", message);
+    console.log("Sending tool response:", message);
     this.sendMessage(message);
   }
 

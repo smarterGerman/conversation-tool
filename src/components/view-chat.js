@@ -78,26 +78,24 @@ class ViewChat extends HTMLElement {
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
         </button>
 
-      <div class="container" style="justify-content: space-between; min-height: 100vh; position: relative; padding-bottom: var(--spacing-xl);">
-        
-       
+      <div class="container" style="justify-content: space-between; height: calc(100vh - 60px); position: relative; overflow: hidden; padding: var(--spacing-md);">
 
-        <div style="margin-top: var(--spacing-xl); text-align: center;">
-          <h2 style="font-size: 1.5rem; margin-bottom: 2px;">${this._mission.target_role || "Target Person"
+        <div style="text-align: center;">
+          <h2 style="font-size: 1.1rem; margin-bottom: 0;">${this._mission.target_role || "Target Person"
       }</h2>
-          
+
           <!-- Language Visibility Pill -->
           <div style="
-            font-size: 0.85rem; 
-            font-weight: 700; 
+            font-size: 0.75rem;
+            font-weight: 700;
             color: var(--color-text-sub);
-            margin-bottom: var(--spacing-md);
+            margin-bottom: var(--spacing-xs);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 6px;
             background: rgba(0,0,0,0.04);
-            padding: 4px 12px;
+            padding: 2px 10px;
             border-radius: var(--radius-full);
             width: fit-content;
             margin-left: auto;
@@ -109,52 +107,39 @@ class ViewChat extends HTMLElement {
             <span style="color: var(--color-accent-primary);">${this._language}</span>
           </div>
 
-          <div style="
-            border-radius: var(--radius-lg);
-            padding: var(--spacing-md) var(--spacing-lg);
-            display: inline-block;
-            margin-top: var(--spacing-md);
-            max-width: 800px;
-          ">
-            <p style="font-size: 1.2rem; font-weight: bold; color: var(--color-accent-secondary); margin: 0;">${this._mission.title
-      }</p>
-            <p style="font-size: 1rem; opacity: 0.9; margin-top: 4px;">${this._mission.desc
-      }</p>
-          </div>
+          <p style="font-size: 1rem; font-weight: bold; color: var(--color-accent-secondary); margin: 0;">${this._mission.title}</p>
+          <p style="font-size: 0.85rem; opacity: 0.9; margin: 2px 0 0 0; max-width: 500px; margin-left: auto; margin-right: auto;">${this._mission.desc}</p>
           ${this._mode === "immergo_teacher"
         ? `
           <div style="
-            margin-top: var(--spacing-lg); 
-            font-size: 0.9rem; 
-            background: var(--color-surface); 
-            color: var(--color-accent-primary); 
-            padding: 8px 16px; 
-            border-radius: var(--radius-full); 
-            display: inline-flex; 
-            align-items: center; 
+            margin-top: var(--spacing-sm);
+            font-size: 0.8rem;
+            background: var(--color-surface);
+            color: var(--color-accent-primary);
+            padding: 4px 12px;
+            border-radius: var(--radius-full);
+            display: inline-flex;
+            align-items: center;
             gap: 6px;
             border: 1px solid var(--color-accent-primary);
-            box-shadow: var(--shadow-sm);
           ">
-            <span>You can ask for <strong>translations</strong> & <strong>explanations</strong> at any time.</span>
+            <span>Ask for <strong>translations</strong> & <strong>explanations</strong> anytime</span>
           </div>
           `
         : ""
       }
         </div>
 
-        <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: ${this._mode === "immergo_teacher" ? "space-between" : "center"
-      }; width: 100%; gap: ${this._mode === "immergo_teacher" ? "10px" : "40px"
-      };">
+        <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; gap: 8px; min-height: 0;">
           <!-- Model Visualizer (Top) -->
-          <div style="width: 100%; height: 120px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <div style="width: 100%; height: 80px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
              <audio-visualizer id="model-viz"></audio-visualizer>
           </div>
-          
+
           <!-- Transcript (Middle) -->
           ${this._mode === "immergo_teacher"
         ? `
-            <div style="width: 100%; height: 250px; margin: 10px 0; position: relative;">
+            <div style="width: 100%; flex: 1; min-height: 100px; max-height: 180px; position: relative;">
               <live-transcript></live-transcript>
             </div>
           `
@@ -162,7 +147,7 @@ class ViewChat extends HTMLElement {
       }
 
           <!-- User Visualizer (Bottom) -->
-           <div style="width: 100%; height: 120px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+           <div style="width: 100%; height: 80px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
              <audio-visualizer id="user-viz"></audio-visualizer>
           </div>
         </div>
@@ -171,12 +156,12 @@ class ViewChat extends HTMLElement {
           .chat-cta-btn {
             background: var(--color-accent-primary);
             color: white;
-            padding: 24px 48px;
+            padding: 16px 36px;
             border-radius: var(--radius-lg);
             width: auto;
-            min-width: 280px;
+            min-width: 220px;
             border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5),
+            box-shadow: 0 8px 24px -8px rgba(0,0,0,0.4),
                         0 0 0 1px rgba(255,255,255,0.2) inset;
             display: flex;
             flex-direction: column;
@@ -221,16 +206,16 @@ class ViewChat extends HTMLElement {
           }
         </style>
 
-        <div style="margin-bottom: var(--spacing-xxl); display: flex; flex-direction: column; gap: var(--spacing-lg); align-items: center;">
-           
+        <div style="display: flex; flex-direction: column; gap: var(--spacing-sm); align-items: center; padding-bottom: var(--spacing-md);">
+
            <button id="mic-btn" class="chat-cta-btn">
-            <span style="font-size: 1.3rem; font-weight: 800; margin-bottom: 2px; letter-spacing: 0.02em;">Start Mission</span>
-            <span style="font-size: 0.85rem; opacity: 0.9; font-style: italic;">You start the conversation!</span>
+            <span style="font-size: 1.1rem; font-weight: 800; margin-bottom: 2px; letter-spacing: 0.02em;">Start Mission</span>
+            <span style="font-size: 0.8rem; opacity: 0.9; font-style: italic;">You start the conversation!</span>
           </button>
 
            <p id="connection-status" style="
-             margin-top: var(--spacing-sm);
-             font-size: 0.9rem;
+             margin: 0;
+             font-size: 0.8rem;
              font-weight: 700;
              height: 1.2em;
              transition: all 0.3s ease;
@@ -428,25 +413,25 @@ class ViewChat extends HTMLElement {
 
     // Setup client callbacks for logging
     this.client.onConnectionStarted = () => {
-      console.log("🚀 [Gemini] Connection started");
+      console.log("[Gemini] Connection started");
     };
 
     this.client.onOpen = () => {
-      console.log("🔓 [Gemini] WebSocket connection opened");
+      console.log("[Gemini] WebSocket connection opened");
     };
 
     this.client.onReceiveResponse = (response) => {
-      console.log("📥 [Gemini] Received response:", response.type);
+      console.log("[Gemini] Received response:", response.type);
       if (response.type === MultimodalLiveResponseType.AUDIO) {
         this.audioPlayer.play(response.data);
       } else if (response.type === MultimodalLiveResponseType.TURN_COMPLETE) {
-        console.log("✅ [Gemini] Turn complete");
+        console.log("[Gemini] Turn complete");
         const transcriptEl = this.querySelector("live-transcript");
         if (transcriptEl) {
           transcriptEl.finalizeAll();
         }
       } else if (response.type === MultimodalLiveResponseType.TOOL_CALL) {
-        console.log("🛠️ [Gemini] Tool Call received:", response.data);
+        console.log("[Gemini] Tool Call received:", response.data);
         if (response.data.functionCalls) {
           response.data.functionCalls.forEach((fc) => {
             this.client.callFunction(fc.name, fc.args);
@@ -476,11 +461,11 @@ class ViewChat extends HTMLElement {
     };
 
     this.client.onError = (error) => {
-      console.error("❌ [Gemini] Error:", error);
+      console.error("[Gemini] Error:", error);
     };
 
     this.client.onClose = () => {
-      console.log("🔒 [Gemini] Connection closed");
+      console.log("[Gemini] Connection closed");
     };
 
     micBtn.addEventListener("click", async () => {
@@ -490,8 +475,8 @@ class ViewChat extends HTMLElement {
         micBtn.classList.add('active');
         // Change to Stop/Listening state
         micBtn.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
-            <span style="font-weight: 800; font-size: 1.1rem; letter-spacing: 0.05em; text-transform: uppercase;">End Mission</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
+            <span style="font-weight: 800; font-size: 1rem; letter-spacing: 0.05em; text-transform: uppercase;">End Mission</span>
         `;
       } else {
         // Was active, so stopping now
@@ -501,7 +486,7 @@ class ViewChat extends HTMLElement {
       }
 
       if (isSpeaking) {
-        console.log("🎙️ [App] Microphone button clicked: Starting session...");
+        console.log("[App] Microphone button clicked: Starting session...");
         statusEl.textContent = "Connecting...";
         statusEl.style.color = "var(--color-text-sub)";
         // Viz active handled by connection now
@@ -579,7 +564,7 @@ When the user has successfully achieved the mission objective declared in the sc
           }
 
           console.log(
-            "📝 [App] Setting system instructions for",
+            "[App] Setting system instructions for",
             language,
             "Mode:",
             mode
@@ -611,8 +596,8 @@ When the user has successfully achieved the mission objective declared in the sc
             isSpeaking = false;
             micBtn.classList.remove('active');
             micBtn.innerHTML = `
-                <span style="font-size: 1.3rem; font-weight: 800; margin-bottom: 2px; letter-spacing: 0.02em;">Start Mission</span>
-                <span style="font-size: 0.85rem; opacity: 0.9; font-style: italic;">You start the conversation!</span>
+                <span style="font-size: 1.1rem; font-weight: 800; margin-bottom: 2px; letter-spacing: 0.02em;">Start Mission</span>
+                <span style="font-size: 0.8rem; opacity: 0.9; font-style: italic;">You start the conversation!</span>
             `;
             userViz.disconnect();
             modelViz.disconnect();
@@ -623,7 +608,7 @@ When the user has successfully achieved the mission objective declared in the sc
           await this.client.connect(token);
 
           // 2. Start Audio Stream
-          console.log("🎤 [App] Starting audio stream...");
+          console.log("[App] Starting audio stream...");
           await this.audioStreamer.start();
 
           // Connect User Visualizer
@@ -635,7 +620,7 @@ When the user has successfully achieved the mission objective declared in the sc
           }
 
           // 3. Initialize Audio Player
-          console.log("🔊 [App] Initializing audio player...");
+          console.log("[App] Initializing audio player...");
           await this.audioPlayer.init();
 
           // Connect Model Visualizer
@@ -646,7 +631,7 @@ When the user has successfully achieved the mission objective declared in the sc
             );
           }
 
-          console.log("✨ [App] Session active!");
+          console.log("[App] Session active!");
           statusEl.textContent = "Connected and ready to speak";
           statusEl.style.color = "#4CAF50"; // Success green
 
@@ -657,7 +642,7 @@ When the user has successfully achieved the mission objective declared in the sc
             .play()
             .catch((e) => console.error("Failed to play start sound:", e));
         } catch (err) {
-          console.error("❌ [App] Failed to start session:", err);
+          console.error("[App] Failed to start session:", err);
           console.log("Error status:", err.status); // Debug status
 
           isSpeaking = false;
@@ -684,10 +669,32 @@ When the user has successfully achieved the mission objective declared in the sc
   }
 
   async getRecaptchaToken() {
-    return new Promise((resolve) => {
+    return new Promise(async (resolve) => {
       // Graceful fallback for Simple Mode
       if (typeof grecaptcha === "undefined") {
-        console.warn("⚠️ ReCAPTCHA not loaded (Simple Mode). Proceeding without token.");
+        console.warn("ReCAPTCHA not loaded (Simple Mode). Proceeding without token.");
+        resolve(null);
+        return;
+      }
+
+      // Get the site key from app config
+      let siteKey = null;
+      const appRoot = document.querySelector('app-root');
+      if (appRoot && appRoot.appConfig && appRoot.appConfig.recaptcha_site_key) {
+        siteKey = appRoot.appConfig.recaptcha_site_key;
+      } else {
+        // Fallback: fetch from API
+        try {
+          const res = await fetch('/api/status');
+          const data = await res.json();
+          siteKey = data.recaptcha_site_key;
+        } catch (e) {
+          console.warn("Failed to fetch ReCAPTCHA config:", e);
+        }
+      }
+
+      if (!siteKey) {
+        console.warn("ReCAPTCHA site key not configured (Simple Mode). Proceeding without token.");
         resolve(null);
         return;
       }
@@ -695,18 +702,15 @@ When the user has successfully achieved the mission objective declared in the sc
       try {
         grecaptcha.enterprise.ready(async () => {
           try {
-            const t = await grecaptcha.enterprise.execute(
-              "6LeSYx8sAAAAAGdRAp8VQ2K9I-KYGWBykzayvQ8n",
-              { action: "LOGIN" }
-            );
+            const t = await grecaptcha.enterprise.execute(siteKey, { action: "LOGIN" });
             resolve(t);
           } catch (e) {
-            console.warn("⚠️ ReCAPTCHA execution failed (Simple Mode fallback):", e);
+            console.warn("ReCAPTCHA execution failed (Simple Mode fallback):", e);
             resolve(null);
           }
         });
       } catch (e) {
-        console.warn("⚠️ ReCAPTCHA ready failed:", e);
+        console.warn("ReCAPTCHA ready failed:", e);
         resolve(null);
       }
     });

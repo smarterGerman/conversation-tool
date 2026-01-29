@@ -17,15 +17,15 @@ import asyncio
 import json
 import os
 import logging
+import secrets
 import time
-import uuid
-import requests
 from typing import Dict, Optional
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, HTTPException, Depends
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from dotenv import load_dotenv
 from server.recaptcha_validator import RecaptchaValidator
@@ -60,7 +60,11 @@ RECAPTCHA_SITE_KEY = os.getenv("RECAPTCHA_SITE_KEY")
 REDIS_URL = os.getenv("REDIS_URL")
 GLOBAL_RATE_LIMIT = os.getenv("GLOBAL_RATE_LIMIT", "1000 per hour")
 PER_USER_RATE_LIMIT = os.getenv("PER_USER_RATE_LIMIT", "2 per minute")
-DEV_MODE = os.getenv("DEV_MODE", "true") == "true"
+DEV_MODE = os.getenv("DEV_MODE", "false") == "true"
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "")  # Comma-separated list of allowed origins
+MAX_MESSAGE_SIZE = int(os.getenv("MAX_MESSAGE_SIZE", "1048576"))  # 1MB default
+# Allowed frame ancestors for CSP (comma-separated) - controls which sites can embed this app in an iframe
+ALLOWED_FRAME_ANCESTORS = os.getenv("ALLOWED_FRAME_ANCESTORS", "")
 
 # Initialize FastAPI
 app = FastAPI()
@@ -79,10 +83,10 @@ def get_global_key(request: Request):
 
 # Initialize Rate Limiter
 if DEV_MODE:
-    logger.info("🔧 DEV_MODE enabled: Rate limiting disabled (using memory storage)")
+    logger.info("DEV_MODE enabled: Rate limiting disabled (using memory storage)")
     limiter = Limiter(key_func=get_global_key) # Defaults to memory
 elif not REDIS_URL:
-    logger.warning("⚠️ REDIS_URL not set: Using memory storage for rate limiting (not suitable for multi-instance)")
+    logger.warning("REDIS_URL not set: Using memory storage for rate limiting (not suitable for multi-instance)")
     limiter = Limiter(key_func=get_fingerprint_key)
 else:
     limiter = Limiter(key_func=get_fingerprint_key, storage_uri=REDIS_URL)
@@ -99,19 +103,60 @@ async def startup_event():
             
             r = redis.from_url(REDIS_URL)
             r.ping()
-            logger.info("✅ Redis connection successful")
+            logger.info("Redis connection successful")
         except Exception as e:
-            logger.error(f"❌ Redis connection failed: {e}")
+            logger.error(f"Redis connection failed: {e}")
             logger.error("Ensure Cloud Run is configured with a VPC Connector if using a private IP.")
 
 
+# Configure CORS - use specific origins in production
+if CORS_ORIGINS:
+    cors_origins = [origin.strip() for origin in CORS_ORIGINS.split(",")]
+    logger.info(f"CORS configured for specific origins: {cors_origins}")
+elif DEV_MODE:
+    cors_origins = ["*"]
+    logger.warning("DEV_MODE: CORS allowing all origins (not for production)")
+else:
+    # In production without explicit CORS_ORIGINS, only allow same-origin
+    cors_origins = []
+    logger.info("CORS: No origins configured, same-origin only")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=cors_origins,
+    allow_credentials=True if cors_origins and cors_origins != ["*"] else False,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
 )
+
+# Security headers middleware
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response: Response = await call_next(request)
+
+        # Content-Security-Policy with frame-ancestors (controls iframe embedding)
+        if ALLOWED_FRAME_ANCESTORS:
+            frame_ancestors = " ".join([a.strip() for a in ALLOWED_FRAME_ANCESTORS.split(",")])
+            response.headers["Content-Security-Policy"] = f"frame-ancestors 'self' {frame_ancestors}"
+        elif DEV_MODE:
+            # Allow any embedding in dev mode
+            response.headers["Content-Security-Policy"] = "frame-ancestors *"
+        else:
+            # Block all iframe embedding by default in production
+            response.headers["Content-Security-Policy"] = "frame-ancestors 'none'"
+            response.headers["X-Frame-Options"] = "DENY"
+
+        # Prevent MIME type sniffing
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        # XSS protection (legacy browsers)
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        # Referrer policy
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        # Permissions policy (restrict sensitive APIs)
+        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(self), camera=(self)"
+        return response
+
+app.add_middleware(SecurityHeadersMiddleware)
 
 # Serve static files
 # app.mount("/static", StaticFiles(directory="frontend"), name="static")
@@ -122,30 +167,49 @@ if os.path.exists("dist/assets"):
 if os.path.exists("dist/audio-processors"):
     app.mount("/audio-processors", StaticFiles(directory="dist/audio-processors"), name="audio-processors")
 # In-memory storage for valid session tokens (Token -> Timestamp)
+# Note: For multi-instance deployments, consider using Redis for token storage
+import threading
+_token_lock = threading.Lock()
 valid_tokens: Dict[str, float] = {}
 TOKEN_EXPIRY_SECONDS = 30
 
 def cleanup_tokens():
-    """Remove expired tokens."""
+    """Remove expired tokens (thread-safe)."""
     current_time = time.time()
-    expired = [token for token, ts in valid_tokens.items() if current_time - ts > TOKEN_EXPIRY_SECONDS]
-    for token in expired:
-        del valid_tokens[token]
+    with _token_lock:
+        expired = [token for token, ts in valid_tokens.items() if current_time - ts > TOKEN_EXPIRY_SECONDS]
+        for token in expired:
+            valid_tokens.pop(token, None)
+
+def add_token(token: str) -> None:
+    """Add a new token (thread-safe)."""
+    with _token_lock:
+        valid_tokens[token] = time.time()
+
+def consume_token(token: str) -> bool:
+    """Consume a token if valid (thread-safe). Returns True if token was valid."""
+    with _token_lock:
+        if token in valid_tokens:
+            del valid_tokens[token]
+            return True
+        return False
 
 @app.get("/api/status")
 async def get_status():
-    """Returns the current configuration mode (Simple vs Production)."""
+    """Returns the current configuration mode and public configuration."""
     missing = []
     if not RECAPTCHA_SITE_KEY:
         missing.append("recaptcha")
     if not REDIS_URL:
         missing.append("redis")
-    
+
     mode = "simple" if missing else "production"
-    
+
     return {
         "mode": mode,
-        "missing": missing
+        "missing": missing,
+        "recaptcha_site_key": RECAPTCHA_SITE_KEY if RECAPTCHA_SITE_KEY else None,
+        "session_time_limit": SESSION_TIME_LIMIT
     }
 
 @app.get("/{full_path:path}")
@@ -173,14 +237,14 @@ async def authenticate(request: Request):
         
         # Check if ReCAPTCHA is configured
         if not RECAPTCHA_SITE_KEY:
-             logger.warning("⚠️ RECAPTCHA_SITE_KEY not set: Skipping validation (Simple Mode)")
+             logger.warning("RECAPTCHA_SITE_KEY not set: Skipping validation (Simple Mode)")
              # Proceed without validation
         else:
             if not recaptcha_token:
                 raise HTTPException(status_code=400, detail="Missing ReCAPTCHA token")
 
             if DEV_MODE:
-                logger.info("🔧 DEV_MODE enabled: Skipping ReCAPTCHA validation")
+                logger.info("DEV_MODE enabled: Skipping ReCAPTCHA validation")
                 validation_result = {'valid': True, 'passes_threshold': True}
             else:
                 validation_result = recaptcha_validator.validate_token(
@@ -196,9 +260,10 @@ async def authenticate(request: Request):
                 logger.warning(f"ReCAPTCHA score too low: {validation_result.get('score')}")
                 raise HTTPException(status_code=403, detail="ReCAPTCHA score too low")
 
-        session_token = str(uuid.uuid4())
+        # Generate cryptographically secure token
+        session_token = secrets.token_urlsafe(32)
         cleanup_tokens()
-        valid_tokens[session_token] = time.time()
+        add_token(session_token)
         
         return {"session_token": session_token, "session_time_limit": SESSION_TIME_LIMIT}
         
@@ -216,14 +281,11 @@ async def websocket_endpoint(websocket: WebSocket, token: Optional[str] = None):
     """
     await websocket.accept()
     
-    # Validate Token
-    if not token or token not in valid_tokens:
+    # Validate and consume token (one-time use, thread-safe)
+    if not token or not consume_token(token):
         logger.warning("Invalid or missing session token")
         await websocket.close(code=4003, reason="Unauthorized")
         return
-        
-    # Remove token (one-time use)
-    del valid_tokens[token]
     
     logger.info("WebSocket connection accepted and authenticated")
 
@@ -261,17 +323,32 @@ async def websocket_endpoint(websocket: WebSocket, token: Optional[str] = None):
         try:
             while True:
                 message = await websocket.receive()
-                
+
                 if "bytes" in message and message["bytes"]:
+                    # Validate message size
+                    if len(message["bytes"]) > MAX_MESSAGE_SIZE:
+                        logger.warning(f"Rejecting oversized binary message: {len(message['bytes'])} bytes")
+                        continue
                     await audio_input_queue.put(message["bytes"])
                 elif "text" in message and message["text"]:
                     text = message["text"]
+                    # Validate message size
+                    if len(text) > MAX_MESSAGE_SIZE:
+                        logger.warning(f"Rejecting oversized text message: {len(text)} bytes")
+                        continue
                     try:
                         payload = json.loads(text)
                         if isinstance(payload, dict) and payload.get("type") == "image":
-                            # Handle base64 image
-                            image_data = base64.b64decode(payload["data"])
-                            await video_input_queue.put(image_data)
+                            # Validate base64 data exists and has reasonable size
+                            image_b64 = payload.get("data", "")
+                            if not image_b64 or len(image_b64) > MAX_MESSAGE_SIZE * 1.4:  # base64 ~33% overhead
+                                logger.warning("Rejecting invalid or oversized image data")
+                                continue
+                            try:
+                                image_data = base64.b64decode(image_b64)
+                                await video_input_queue.put(image_data)
+                            except Exception as e:
+                                logger.warning(f"Failed to decode base64 image: {e}")
                             continue
                         elif isinstance(payload, dict) and "realtime_input" in payload:
                              # Forward realtime input (audio/video chunks)
@@ -280,7 +357,7 @@ async def websocket_endpoint(websocket: WebSocket, token: Optional[str] = None):
                              pass
                     except json.JSONDecodeError:
                         pass
-                    
+
                     await text_input_queue.put(text)
         except WebSocketDisconnect:
             logger.info("WebSocket disconnected")
@@ -314,7 +391,8 @@ async def websocket_endpoint(websocket: WebSocket, token: Optional[str] = None):
         # Ensure websocket is closed if not already
         try:
             await websocket.close()
-        except:
+        except Exception:
+            # WebSocket may already be closed, which is fine
             pass
 
 if __name__ == "__main__":
