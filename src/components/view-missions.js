@@ -37,10 +37,6 @@ class ViewMissions extends HTMLElement {
           margin-bottom: 2px;
         }
 
-        .page-subtitle {
-          color: var(--color-text-sub);
-          font-size: 0.85rem;
-        }
 
         /* Mode Toggle */
         .mode-toggle {
@@ -126,11 +122,11 @@ class ViewMissions extends HTMLElement {
           text-align: center;
         }
 
-        .level-A1 { background: #C8E6C9; color: #1B5E20; }
-        .level-A2 { background: #B2DFDB; color: #00695C; }
-        .level-B1 { background: #FFE082; color: #E65100; }
-        .level-B2 { background: #FFAB91; color: #BF360C; }
-        .level-C1 { background: #CE93D8; color: #6A1B9A; }
+        .level-badge {
+          background: var(--braun-light);
+          color: var(--braun-dark);
+          box-shadow: var(--shadow-pressed);
+        }
 
         .level-title {
           font-size: 0.9rem;
@@ -224,8 +220,7 @@ class ViewMissions extends HTMLElement {
 
       <div class="scenarios-container">
         <div class="page-header">
-          <h1 class="page-title">Choose a Scenario</h1>
-          <p class="page-subtitle">Select your level and topic</p>
+          <h1 class="page-title">Select your level and topic</h1>
         </div>
 
         <div class="mode-toggle">
@@ -327,6 +322,7 @@ class ViewMissions extends HTMLElement {
           <div class="scenario-title">${scenario.title}</div>
           <div class="scenario-desc">${scenario.desc}</div>
         </div>
+        <svg class="scenario-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
       `;
 
       item.addEventListener('click', () => {
