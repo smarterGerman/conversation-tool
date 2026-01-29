@@ -85,9 +85,15 @@ class ViewMissions extends HTMLElement {
         .level-accordion {
           margin-bottom: var(--spacing-sm);
           border-radius: var(--radius-md);
-          overflow: hidden;
+          overflow: visible;
           background: var(--braun-white);
           box-shadow: var(--shadow-raised);
+          position: relative;
+          z-index: 1;
+        }
+
+        .level-accordion.open {
+          z-index: 2;
         }
 
         .level-header {
@@ -125,6 +131,10 @@ class ViewMissions extends HTMLElement {
         .level-badge {
           background: var(--braun-light);
           color: var(--braun-dark);
+          box-shadow: var(--shadow-raised);
+        }
+
+        .level-accordion.open .level-badge {
           box-shadow: var(--shadow-pressed);
         }
 

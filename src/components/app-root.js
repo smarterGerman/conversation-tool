@@ -46,11 +46,7 @@ class AppRoot extends HTMLElement {
             border-bottom: 1px solid var(--braun-mid);
         `;
 
-        header.innerHTML = `
-            <div style="font-weight: 700; font-size: 1.25rem; color: var(--braun-black); letter-spacing: -0.5px;">
-                SmarterGerman
-            </div>
-        `;
+        header.innerHTML = ``;
 
         this.appendChild(header);
 
