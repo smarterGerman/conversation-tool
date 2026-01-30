@@ -275,3 +275,120 @@ https://cloud.google.com/terms/data-processing-addendum
 
 For privacy questions, contact: [YOUR EMAIL]
 ```
+
+---
+
+# Course Platform Integration
+
+## Authentication Methods
+
+The conversation tool supports multiple authentication methods:
+
+### 1. Password Authentication (Simple)
+Set `ACCESS_PASSWORD` environment variable. Users enter the password before starting.
+
+### 2. JWT Token (Recommended for Course Platforms)
+Course platform generates a signed JWT token with user enrollment info.
+
+**Setup:**
+1. Set `JWT_SECRET` environment variable (shared secret with your course platform)
+2. Course platform generates JWT and redirects user with `?jwt=TOKEN` parameter
+
+**JWT Payload:**
+```json
+{
+    "sub": "user@email.com",
+    "exp": 1234567890,
+    "iat": 1234567890,
+    "course": "german-a1",
+    "platform": "lifterlms"
+}
+```
+
+### 3. Signed URL (For Iframe Embedding)
+Simple HMAC-signed URLs for embedding in course pages.
+
+**URL Format:**
+```
+https://conversation.smartergerman.com?user=email&exp=timestamp&sig=signature&course=german-a1
+```
+
+---
+
+## WordPress/LifterLMS Integration
+
+Add this to your WordPress theme's `functions.php`:
+
+```php
+<?php
+define('SG_CONVERSATION_URL', 'https://conversation.smartergerman.com');
+define('SG_JWT_SECRET', 'your-shared-secret-here');  // Must match JWT_SECRET env var
+
+/**
+ * Generate a signed URL for the conversation tool
+ */
+function sg_generate_conversation_url($course = '') {
+    if (!is_user_logged_in()) return '';
+
+    $user = wp_get_current_user();
+    $exp = time() + 3600; // 1 hour
+
+    $message = $user->user_email . '|' . $exp . '|' . $course;
+    $sig = hash_hmac('sha256', $message, SG_JWT_SECRET);
+
+    $params = http_build_query([
+        'user' => $user->user_email,
+        'exp' => $exp,
+        'course' => $course,
+        'sig' => $sig
+    ]);
+
+    return SG_CONVERSATION_URL . '?' . $params;
+}
+
+/**
+ * Shortcode to embed the conversation tool
+ * Usage: [sg_conversation course="german-a1"]
+ */
+function sg_conversation_shortcode($atts) {
+    $atts = shortcode_atts(['course' => ''], $atts);
+
+    if (!is_user_logged_in()) {
+        return '<p>Please log in to access the conversation practice tool.</p>';
+    }
+
+    $url = sg_generate_conversation_url($atts['course']);
+    return sprintf(
+        '<iframe src="%s" width="100%%" height="700" frameborder="0" allow="microphone"></iframe>',
+        esc_url($url)
+    );
+}
+add_shortcode('sg_conversation', 'sg_conversation_shortcode');
+```
+
+---
+
+## Environment Variables Summary
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `ACCESS_PASSWORD` | No | Simple password protection |
+| `JWT_SECRET` | No | Shared secret for JWT validation |
+| `JWT_ALGORITHM` | No | Default: HS256 |
+| `JWT_ISSUER` | No | Optional issuer validation |
+| `JWT_MAX_AGE` | No | Max token age (default: 3600s) |
+| `SIGNED_URL_SECRET` | No | Falls back to JWT_SECRET |
+| `CORS_ORIGINS` | Yes | Allowed origins (comma-separated) |
+| `DEV_MODE` | No | Set to "false" in production |
+| `SESSION_TIME_LIMIT` | No | Max session duration (default: 300s) |
+
+---
+
+## GitHub Secrets/Variables to Set
+
+**Secrets** (sensitive):
+- `ACCESS_PASSWORD` - Your chosen password
+- `JWT_SECRET` - Shared secret with course platform (generate with: `openssl rand -hex 32`)
+
+**Variables** (non-sensitive):
+- `CORS_ORIGINS` - e.g., `https://conversation.smartergerman.com,https://courses.smartergerman.com`

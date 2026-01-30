@@ -238,12 +238,20 @@ export class GeminiLiveAPI {
     functionToCall.runFunction(parameters);
   }
 
-  async connect(token, password = null) {
+  async connect(token, authOptions = {}) {
     try {
       // 1. Authenticate
       const authPayload = { recaptcha_token: token };
-      if (password) {
-        authPayload.password = password;
+
+      // Add auth credentials based on what's provided
+      if (authOptions.password) {
+        authPayload.password = authOptions.password;
+      }
+      if (authOptions.jwtToken) {
+        authPayload.jwt_token = authOptions.jwtToken;
+      }
+      if (authOptions.signedParams) {
+        authPayload.signed_params = authOptions.signedParams;
       }
 
       const response = await fetch("/api/auth", {

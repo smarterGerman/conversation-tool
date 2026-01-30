@@ -268,12 +268,32 @@ class ViewChat extends HTMLElement {
     // Store session password and whether it's required
     let sessionPassword = sessionStorage.getItem("sg_access_pw") || "";
     let passwordRequired = false;
+    let courseAuthEnabled = false;
+
+    // Check for JWT or signed URL params (for course platform integration)
+    const urlParams = new URLSearchParams(window.location.search);
+    const jwtToken = urlParams.get("jwt") || urlParams.get("token");
+    const signedUrlParams = urlParams.get("user") ? {
+      user: urlParams.get("user"),
+      exp: urlParams.get("exp"),
+      sig: urlParams.get("sig"),
+      course: urlParams.get("course") || ""
+    } : null;
+
+    // If we have course auth params, we can skip password
+    const hasCourseAuth = !!(jwtToken || signedUrlParams);
 
     // Check if password is required from API status
     fetch("/api/status")
       .then((res) => res.json())
       .then((status) => {
         passwordRequired = status.password_required || false;
+        courseAuthEnabled = status.course_auth_enabled || false;
+
+        // If we have valid course auth, password is not required
+        if (hasCourseAuth && courseAuthEnabled) {
+          passwordRequired = false;
+        }
       })
       .catch(() => {});
 
@@ -720,7 +740,13 @@ When ending:
             return;
           }
 
-          await this.client.connect(token, passwordRequired ? sessionPassword : null);
+          // Pass auth credentials based on what's available
+          const authOptions = {
+            password: passwordRequired ? sessionPassword : null,
+            jwtToken: hasCourseAuth ? jwtToken : null,
+            signedParams: hasCourseAuth ? signedUrlParams : null
+          };
+          await this.client.connect(token, authOptions);
 
           // 2. Start Audio Stream
           console.log("[App] Starting audio stream...");
