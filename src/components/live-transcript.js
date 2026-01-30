@@ -211,20 +211,21 @@ class LiveTranscript extends HTMLElement {
           flex: 1;
           overflow-y: auto;
           padding: 0.5rem 1rem;
+          padding-bottom: 2rem;
           display: flex;
           flex-direction: column;
           gap: 0.5rem;
           scroll-behavior: smooth;
-          /* Subtle fade at edges only */
-          mask-image: linear-gradient(to bottom, transparent 0px, black 10px, black calc(100% - 20px), transparent 100%);
-          -webkit-mask-image: linear-gradient(to bottom, transparent 0px, black 10px, black calc(100% - 20px), transparent 100%);
+          /* Subtle fade at top edge only - keep bottom fully visible */
+          mask-image: linear-gradient(to bottom, transparent 0px, black 10px, black 100%);
+          -webkit-mask-image: linear-gradient(to bottom, transparent 0px, black 10px, black 100%);
         }
 
-        /* Small spacer for scroll clearance */
+        /* Spacer for scroll clearance - ensures last message is visible */
         .transcript-container::after {
           content: "";
           display: block;
-          min-height: 20px;
+          min-height: 40px;
           flex-shrink: 0;
         }
 
