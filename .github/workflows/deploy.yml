@@ -32,12 +32,14 @@ jobs:
         uses: google-github-actions/setup-gcloud@v2
 
       - name: Deploy to Cloud Run
+        env:
+          CORS_ORIGINS: ${{ vars.CORS_ORIGINS || '' }}
+          ACCESS_PASSWORD: ${{ secrets.ACCESS_PASSWORD || '' }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET || '' }}
         run: |
           gcloud run deploy ${{ env.SERVICE }} \
             --source . \
             --region ${{ env.REGION }} \
             --allow-unauthenticated \
-            --set-env-vars "DEV_MODE=false" \
-            --set-env-vars "CORS_ORIGINS=${{ vars.CORS_ORIGINS || '' }}" \
-            --set-env-vars "ACCESS_PASSWORD=${{ secrets.ACCESS_PASSWORD || '' }}" \
+            --set-env-vars "^##^DEV_MODE=false##CORS_ORIGINS=${CORS_ORIGINS}##ACCESS_PASSWORD=${ACCESS_PASSWORD}##JWT_SECRET=${JWT_SECRET}" \
             --quiet

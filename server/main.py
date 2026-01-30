@@ -33,6 +33,7 @@ from server.gemini_live import GeminiLive
 from server.fingerprint import generate_fingerprint
 from server.simple_tracker import simpletrack
 from server.config_utils import get_project_id
+from server.course_auth import course_auth
 
 
 # Rate Limiting
@@ -212,7 +213,8 @@ async def get_status():
         "missing": missing,
         "recaptcha_site_key": RECAPTCHA_SITE_KEY if RECAPTCHA_SITE_KEY else None,
         "session_time_limit": SESSION_TIME_LIMIT,
-        "password_required": bool(ACCESS_PASSWORD)
+        "password_required": bool(ACCESS_PASSWORD),
+        "course_auth_enabled": course_auth.is_enabled()
     }
 
 @app.get("/{full_path:path}")
@@ -232,39 +234,72 @@ async def serve_spa(full_path: str):
 @limiter.limit(PER_USER_RATE_LIMIT, key_func=get_fingerprint_key)
 async def authenticate(request: Request):
     """
-    Validates password (if set), ReCAPTCHA and issues a temporary session token for WebSocket connection.
+    Validates authentication and issues a temporary session token for WebSocket connection.
+
+    Supports multiple auth methods (in priority order):
+    1. JWT token from course platform (bypasses password and reCAPTCHA)
+    2. Signed URL params (for iframe embedding)
+    3. Password + reCAPTCHA (fallback)
     """
     try:
         data = await request.json()
         recaptcha_token = data.get("recaptcha_token")
         password = data.get("password")
+        jwt_token = data.get("jwt_token")
+        signed_params = data.get("signed_params")  # {user, exp, sig, course}
 
-        # Check access password if configured
-        if ACCESS_PASSWORD:
-            if not password or password != ACCESS_PASSWORD:
-                logger.warning("Invalid or missing access password")
-                raise HTTPException(status_code=403, detail="Invalid access password")
+        course_user = None
 
-        # Check if ReCAPTCHA is configured
-        if not RECAPTCHA_SITE_KEY:
-             logger.warning("RECAPTCHA_SITE_KEY not set: Skipping validation (Simple Mode)")
-             # Proceed without validation
+        # Method 1: JWT token from course platform
+        if jwt_token and course_auth.is_enabled():
+            try:
+                result = course_auth.validate_jwt(jwt_token)
+                course_user = result.get("user_id")
+                logger.info(f"Authenticated via JWT: {course_user}")
+                # JWT auth bypasses password and reCAPTCHA
+            except ValueError as e:
+                logger.warning(f"JWT validation failed: {e}")
+                raise HTTPException(status_code=403, detail=f"Invalid JWT: {e}")
+
+        # Method 2: Signed URL params (for iframe embedding)
+        elif signed_params and course_auth.is_enabled():
+            try:
+                result = course_auth.validate_signed_url(signed_params)
+                course_user = result.get("user_id")
+                logger.info(f"Authenticated via signed URL: {course_user}")
+                # Signed URL auth bypasses password and reCAPTCHA
+            except ValueError as e:
+                logger.warning(f"Signed URL validation failed: {e}")
+                raise HTTPException(status_code=403, detail=f"Invalid signed URL: {e}")
+
+        # Method 3: Password + reCAPTCHA (traditional auth)
         else:
-            if not recaptcha_token:
-                raise HTTPException(status_code=400, detail="Missing ReCAPTCHA token")
+            # Check access password if configured
+            if ACCESS_PASSWORD:
+                if not password or password != ACCESS_PASSWORD:
+                    logger.warning("Invalid or missing access password")
+                    raise HTTPException(status_code=403, detail="Invalid access password")
 
-            if DEV_MODE:
-                logger.info("DEV_MODE enabled: Skipping ReCAPTCHA validation")
-                validation_result = {'valid': True, 'passes_threshold': True}
+            # Check if ReCAPTCHA is configured
+            if not RECAPTCHA_SITE_KEY:
+                 logger.warning("RECAPTCHA_SITE_KEY not set: Skipping validation (Simple Mode)")
+                 # Proceed without validation
             else:
-                validation_result = recaptcha_validator.validate_token(
-                    token=recaptcha_token,
-                    recaptcha_action="LOGIN"
-                )
-            
-            if not validation_result['valid']:
-                logger.warning(f"ReCAPTCHA failed: {validation_result.get('error')}")
-                raise HTTPException(status_code=403, detail="ReCAPTCHA validation failed")
+                if not recaptcha_token:
+                    raise HTTPException(status_code=400, detail="Missing ReCAPTCHA token")
+
+                if DEV_MODE:
+                    logger.info("DEV_MODE enabled: Skipping ReCAPTCHA validation")
+                    validation_result = {'valid': True, 'passes_threshold': True}
+                else:
+                    validation_result = recaptcha_validator.validate_token(
+                        token=recaptcha_token,
+                        recaptcha_action="LOGIN"
+                    )
+
+                if not validation_result['valid']:
+                    logger.warning(f"ReCAPTCHA failed: {validation_result.get('error')}")
+                    raise HTTPException(status_code=403, detail="ReCAPTCHA validation failed")
                 
             if not validation_result['passes_threshold']:
                 logger.warning(f"ReCAPTCHA score too low: {validation_result.get('score')}")
