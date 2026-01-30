@@ -42,8 +42,8 @@ jobs:
           TEACHABLE_CLIENT_SECRET: ${{ secrets.TEACHABLE_CLIENT_SECRET || '' }}
           TEACHABLE_REDIRECT_URI: ${{ vars.TEACHABLE_REDIRECT_URI || '' }}
           TEACHABLE_REQUIRED_COURSES: ${{ vars.TEACHABLE_REQUIRED_COURSES || '' }}
-          DAILY_USER_LIMIT: ${{ vars.DAILY_USER_LIMIT || '3600' }}
-          SESSION_TIME_LIMIT: ${{ vars.SESSION_TIME_LIMIT || '300' }}
+          DAILY_USER_LIMIT: ${{ vars.DAILY_USER_LIMIT || '1200' }}
+          SESSION_TIME_LIMIT: ${{ vars.SESSION_TIME_LIMIT || '1200' }}
           AI_PROVIDER: ${{ vars.AI_PROVIDER || 'gemini' }}
           QWEN_API_KEY: ${{ secrets.QWEN_API_KEY || '' }}
           QWEN_MODEL: ${{ vars.QWEN_MODEL || 'qwen3-omni-flash-realtime' }}

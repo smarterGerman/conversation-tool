@@ -22,9 +22,9 @@ class AudioCaptureProcessor extends AudioWorkletProcessor {
   constructor() {
     super();
     // Increased buffer to reduce message count (helps with API limits)
-    // 32768 samples at 48kHz = ~682ms latency, allows ~11+ min sessions
-    // Trade-off: slightly higher latency but longer sessions
-    this.bufferSize = 32768;
+    // 65536 samples at 48kHz = ~1.4s latency, allows ~20+ min sessions
+    // Trade-off: higher latency but longer sessions
+    this.bufferSize = 65536;
     this.buffer = new Float32Array(this.bufferSize);
     this.bufferIndex = 0;
   }

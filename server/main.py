@@ -270,8 +270,7 @@ async def get_terms():
 async def get_status():
     """Returns the current configuration mode and public configuration."""
     missing = []
-    if not RECAPTCHA_SITE_KEY:
-        missing.append("recaptcha")
+    # Only check Redis - recaptcha is no longer used (all users authenticate via JWT)
     if not REDIS_URL:
         missing.append("redis")
 
