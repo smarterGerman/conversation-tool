@@ -56,14 +56,8 @@ class GeminiLive:
         logger.debug("Setup config received: %s", json.dumps(setup_config, indent=2) if setup_config else "None")
 
         config_args = {
-            "response_modalities": [types.Modality.AUDIO],
-            # Enable context window compression for longer sessions
-            "context_window_compression": types.ContextWindowCompressionConfig(
-                trigger_tokens=10000,
-                sliding_window=types.SlidingWindow(target_tokens=1024)
-            )
+            "response_modalities": [types.Modality.AUDIO]
         }
-        logger.info("Context window compression enabled: trigger=10000, target=1024")
         
         if setup_config:
             # Parse configuration from frontend
