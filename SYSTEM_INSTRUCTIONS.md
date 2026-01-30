@@ -368,6 +368,48 @@ add_shortcode('sg_conversation', 'sg_conversation_shortcode');
 
 ---
 
+## Teachable OAuth Integration
+
+For Teachable integration with enrollment verification:
+
+### Setup Steps
+
+1. **In Teachable Admin:**
+   - Go to Settings > OAuth apps
+   - Click "Add new OAuth app"
+   - Enter App name: "SmarterGerman Conversation Tool"
+   - Enter Redirect URL: `https://conversation.smartergerman.com/api/teachable/callback`
+   - Save and note the Client ID and Client Secret
+
+2. **Find Your School ID:**
+   - Look at your Teachable login URL: `https://sso.teachable.com/secure/XXXXX/...`
+   - The XXXXX is your School ID
+
+3. **Set GitHub Secrets/Variables:**
+   - `TEACHABLE_SCHOOL_ID` (variable): Your school ID
+   - `TEACHABLE_CLIENT_ID` (secret): OAuth Client ID
+   - `TEACHABLE_CLIENT_SECRET` (secret): OAuth Client Secret
+   - `TEACHABLE_REDIRECT_URI` (variable): `https://conversation.smartergerman.com/api/teachable/callback`
+   - `TEACHABLE_REQUIRED_COURSES` (variable, optional): Comma-separated course IDs that grant access
+
+### How It Works
+
+1. User clicks "Login with Teachable" on conversation.smartergerman.com
+2. Redirects to Teachable OAuth login
+3. User authenticates with their Teachable account
+4. Teachable redirects back with authorization code
+5. Backend exchanges code for access token
+6. Backend checks if user is enrolled in a paid/active course
+7. If enrolled, generates signed URL and grants access
+8. If not enrolled, shows error message
+
+### Course ID Filtering (Optional)
+
+If `TEACHABLE_REQUIRED_COURSES` is set, only users enrolled in those specific courses get access.
+If not set, any active paid enrollment grants access.
+
+---
+
 ## Environment Variables Summary
 
 | Variable | Required | Description |
@@ -381,6 +423,11 @@ add_shortcode('sg_conversation', 'sg_conversation_shortcode');
 | `CORS_ORIGINS` | Yes | Allowed origins (comma-separated) |
 | `DEV_MODE` | No | Set to "false" in production |
 | `SESSION_TIME_LIMIT` | No | Max session duration (default: 300s) |
+| `TEACHABLE_SCHOOL_ID` | No | Teachable school ID |
+| `TEACHABLE_CLIENT_ID` | No | Teachable OAuth client ID |
+| `TEACHABLE_CLIENT_SECRET` | No | Teachable OAuth client secret |
+| `TEACHABLE_REDIRECT_URI` | No | OAuth callback URL |
+| `TEACHABLE_REQUIRED_COURSES` | No | Course IDs required for access |
 
 ---
 
@@ -389,6 +436,11 @@ add_shortcode('sg_conversation', 'sg_conversation_shortcode');
 **Secrets** (sensitive):
 - `ACCESS_PASSWORD` - Your chosen password
 - `JWT_SECRET` - Shared secret with course platform (generate with: `openssl rand -hex 32`)
+- `TEACHABLE_CLIENT_ID` - Teachable OAuth Client ID
+- `TEACHABLE_CLIENT_SECRET` - Teachable OAuth Client Secret
 
 **Variables** (non-sensitive):
 - `CORS_ORIGINS` - e.g., `https://conversation.smartergerman.com,https://courses.smartergerman.com`
+- `TEACHABLE_SCHOOL_ID` - Your Teachable school ID
+- `TEACHABLE_REDIRECT_URI` - `https://conversation.smartergerman.com/api/teachable/callback`
+- `TEACHABLE_REQUIRED_COURSES` - (optional) Comma-separated course IDs

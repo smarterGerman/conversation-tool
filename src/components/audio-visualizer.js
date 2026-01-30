@@ -47,7 +47,7 @@ class AudioVisualizer extends HTMLElement {
 
     disconnectedCallback() {
         if (this.resizeObserver) this.resizeObserver.disconnect();
-        this.stopAudio();
+        this.disconnect();
     }
 
     resize() {

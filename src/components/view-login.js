@@ -30,9 +30,21 @@ class ViewLogin extends HTMLElement {
   }
 
   render() {
+    // Check for OAuth errors in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const error = urlParams.get('error');
+    const errorMessage = urlParams.get('message');
+
+    const errorHtml = error ? `
+      <div class="login-error">
+        <strong>Login failed:</strong> ${errorMessage || 'An error occurred during authentication. Please try again.'}
+      </div>
+    ` : '';
+
     this.innerHTML = `
       <div class="login-container">
         <div class="login-card">
+          ${errorHtml}
           <div class="login-logo">
             <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
@@ -59,14 +71,13 @@ class ViewLogin extends HTMLElement {
               Login with SmarterGerman
             </a>
 
-            <a href="https://courses.smartergerman.com/courses" target="_blank" class="login-btn login-btn-teachable">
+            <a href="/api/teachable/authorize?redirect=${encodeURIComponent(window.location.origin)}" class="login-btn login-btn-teachable">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
                 <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
               </svg>
-              Access via Teachable Courses
+              Login with Teachable
             </a>
-            <p class="teachable-note">Teachable students: Access the conversation tool directly from your enrolled course lessons.</p>
           </div>
 
           <div class="login-footer">
@@ -170,11 +181,14 @@ class ViewLogin extends HTMLElement {
           transform: translateY(-1px);
         }
 
-        .teachable-note {
-          font-size: 0.8rem;
-          color: var(--color-text-sub);
-          margin: var(--spacing-sm) 0 0 0;
-          font-style: italic;
+        .login-error {
+          background: #fef2f2;
+          border: 1px solid #fecaca;
+          color: #dc2626;
+          padding: var(--spacing-md);
+          border-radius: 8px;
+          margin-bottom: var(--spacing-lg);
+          font-size: 0.9rem;
         }
 
         .login-footer {

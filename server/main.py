@@ -22,7 +22,7 @@ import time
 from typing import Dict, Optional
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, HTTPException, Depends
-from fastapi.responses import FileResponse, JSONResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, Response, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -34,6 +34,7 @@ from server.fingerprint import generate_fingerprint
 from server.simple_tracker import simpletrack
 from server.config_utils import get_project_id
 from server.course_auth import course_auth
+from server.teachable_auth import teachable_auth
 
 
 # Rate Limiting
@@ -214,8 +215,72 @@ async def get_status():
         "recaptcha_site_key": RECAPTCHA_SITE_KEY if RECAPTCHA_SITE_KEY else None,
         "session_time_limit": SESSION_TIME_LIMIT,
         "password_required": bool(ACCESS_PASSWORD),
-        "course_auth_enabled": course_auth.is_enabled()
+        "course_auth_enabled": course_auth.is_enabled(),
+        "teachable_auth_enabled": teachable_auth.is_enabled()
     }
+
+@app.get("/api/teachable/authorize")
+async def teachable_authorize(redirect: str = ""):
+    """
+    Initiates Teachable OAuth flow.
+    Redirects user to Teachable login page.
+    """
+    if not teachable_auth.is_enabled():
+        raise HTTPException(status_code=503, detail="Teachable OAuth not configured")
+
+    try:
+        result = teachable_auth.get_authorization_url(final_redirect=redirect)
+        return RedirectResponse(url=result["url"], status_code=302)
+    except Exception as e:
+        logger.error("Teachable OAuth error: %s", e)
+        raise HTTPException(status_code=500, detail="OAuth initialization failed")
+
+@app.get("/api/teachable/callback")
+async def teachable_callback(code: str = "", state: str = "", error: str = ""):
+    """
+    Handles Teachable OAuth callback.
+    Exchanges code for token, verifies enrollment, and redirects with signed URL.
+    """
+    if not teachable_auth.is_enabled():
+        raise HTTPException(status_code=503, detail="Teachable OAuth not configured")
+
+    if error:
+        logger.warning("Teachable OAuth error: %s", error)
+        return RedirectResponse(
+            url="/?error=oauth_denied&message=Access+was+denied",
+            status_code=302
+        )
+
+    if not code or not state:
+        return RedirectResponse(
+            url="/?error=oauth_invalid&message=Invalid+OAuth+response",
+            status_code=302
+        )
+
+    result = teachable_auth.handle_callback(code, state)
+
+    if not result.get("valid"):
+        error_msg = result.get("error", "Authentication failed")
+        # URL encode the error message
+        from urllib.parse import quote
+        return RedirectResponse(
+            url=f"/?error=oauth_failed&message={quote(error_msg)}",
+            status_code=302
+        )
+
+    # Generate signed URL and redirect
+    try:
+        signed_url = teachable_auth.generate_signed_url(
+            user_email=result.get("user_email", ""),
+            course="teachable"
+        )
+        return RedirectResponse(url=signed_url, status_code=302)
+    except Exception as e:
+        logger.error("Failed to generate signed URL: %s", e)
+        return RedirectResponse(
+            url="/?error=auth_error&message=Failed+to+complete+authentication",
+            status_code=302
+        )
 
 @app.get("/{full_path:path}")
 @simpletrack("page_view")
