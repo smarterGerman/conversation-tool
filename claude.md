@@ -156,3 +156,45 @@ gh workflow run deploy.yml
 - **Project:** smartergerman-conversation
 - **Service:** conversation-tool
 - **Region:** us-central1
+
+---
+
+## Future: Provisioned Throughput (EU/Frankfurt)
+
+For guaranteed capacity and GDPR-optimal data residency, consider migrating to Provisioned Throughput in Frankfurt.
+
+### Why Provisioned Throughput?
+- **Guaranteed capacity** - No throttling during peak times
+- **EU data residency** - Data stays in Frankfurt (europe-west3)
+- **Fixed cost** - Predictable monthly billing
+- **Better for GDPR** - No US data transfer concerns
+
+### Setup Steps (When Ready)
+1. Go to: https://console.cloud.google.com/vertex-ai/provisioned-throughput?project=smartergerman-conversation
+2. Click **"New order"**
+3. Configure:
+   - **Region:** `europe-west3` (Frankfurt)
+   - **Model:** Select current Gemini model
+   - **GSUs:** Use estimation tool (start with 1 GSU for ~60 concurrent users)
+   - **Term:** 1 week (test) → 1 month → 1 year (cheapest)
+4. After purchase, update Cloud Run:
+   ```bash
+   # Update environment variable
+   VERTEX_AI_LOCATION=europe-west3
+   ```
+
+### Current Session Limits (Pay-as-you-go)
+- Audio-only sessions: 15 min max (without compression)
+- Connection lifetime: ~10 minutes
+- Context window: 128k tokens
+- **Context compression enabled** (Jan 2026): Sessions can now run ~10+ min continuously
+
+### Pricing
+- GSU pricing varies by model - check estimation tool
+- No significant US vs EU price difference
+- Provisioned Throughput is commitment-based (can't cancel mid-term)
+
+### Documentation
+- [Provisioned Throughput Overview](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/provisioned-throughput/overview)
+- [Purchase Guide](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/provisioned-throughput/purchase-provisioned-throughput)
+- [Live API Limits](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/live-api/start-manage-session)
