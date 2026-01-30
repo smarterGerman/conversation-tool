@@ -62,9 +62,9 @@ export class AudioStreamer {
           sampleRate: this.sampleRate,
         });
 
-      // Load the audio worklet module
+      // Load the audio worklet module (cache-busted)
       await this.audioContext.audioWorklet.addModule(
-        "/audio-processors/capture.worklet.js"
+        "/audio-processors/capture.worklet.js?v=2"
       );
 
       // Create the audio worklet node
@@ -432,7 +432,7 @@ export class AudioPlayer {
         );
       }
       await this.audioContext.audioWorklet.addModule(
-        "/audio-processors/playback.worklet.js"
+        "/audio-processors/playback.worklet.js?v=2"
       );
 
       // Create worklet node
