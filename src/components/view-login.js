@@ -167,7 +167,8 @@ class ViewLogin extends HTMLElement {
         }
 
         .login-btn-lifterlms:hover {
-          background: var(--color-accent-secondary);
+          background: #c65a00;
+          color: white;
           transform: translateY(-1px);
         }
 
@@ -177,7 +178,8 @@ class ViewLogin extends HTMLElement {
         }
 
         .login-btn-teachable:hover {
-          background: #2a2a4e;
+          background: #3a3a5e;
+          color: white;
           transform: translateY(-1px);
         }
 
