@@ -22,9 +22,9 @@ class AudioCaptureProcessor extends AudioWorkletProcessor {
   constructor() {
     super();
     // Buffer size balances latency vs session duration
-    // 16384 samples at 48kHz = ~340ms latency (more responsive)
-    // Trade-off: shorter max session but better user experience
-    this.bufferSize = 16384;
+    // 32768 samples at 48kHz = ~680ms latency
+    // Larger buffer = fewer messages = longer sessions before hitting Gemini's 1000 message limit
+    this.bufferSize = 32768;
     this.buffer = new Float32Array(this.bufferSize);
     this.bufferIndex = 0;
   }
