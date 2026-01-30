@@ -34,6 +34,7 @@ jobs:
       - name: Deploy to Cloud Run
         env:
           CORS_ORIGINS: ${{ vars.CORS_ORIGINS || '' }}
+          ALLOWED_FRAME_ANCESTORS: ${{ vars.ALLOWED_FRAME_ANCESTORS || '' }}
           ACCESS_PASSWORD: ${{ secrets.ACCESS_PASSWORD || '' }}
           JWT_SECRET: ${{ secrets.JWT_SECRET || '' }}
         run: |
@@ -41,5 +42,5 @@ jobs:
             --source . \
             --region ${{ env.REGION }} \
             --allow-unauthenticated \
-            --set-env-vars "^##^DEV_MODE=false##CORS_ORIGINS=${CORS_ORIGINS}##ACCESS_PASSWORD=${ACCESS_PASSWORD}##JWT_SECRET=${JWT_SECRET}" \
+            --set-env-vars "^##^DEV_MODE=false##CORS_ORIGINS=${CORS_ORIGINS}##ALLOWED_FRAME_ANCESTORS=${ALLOWED_FRAME_ANCESTORS}##ACCESS_PASSWORD=${ACCESS_PASSWORD}##JWT_SECRET=${JWT_SECRET}" \
             --quiet
