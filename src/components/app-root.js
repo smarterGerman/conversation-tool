@@ -17,16 +17,18 @@
 import './view-missions.js';
 import './view-chat.js';
 import './view-summary.js';
+import './view-login.js';
 import './text-cycler.js';
 
 class AppRoot extends HTMLElement {
     constructor() {
         super();
         this.state = {
-            view: 'missions', // missions, chat, summary
+            view: 'missions', // login, missions, chat, summary
             selectedMission: null,
             selectedLanguage: null,
-            sessionResult: null
+            sessionResult: null,
+            isAuthenticated: false
         };
     }
 
@@ -41,7 +43,8 @@ class AppRoot extends HTMLElement {
         this.viewContainer.style.width = "100%";
         this.appendChild(this.viewContainer);
 
-        this.render();
+        // Check authentication before rendering
+        this.checkAuthentication();
 
         this.checkConfigStatus();
 
@@ -54,6 +57,26 @@ class AppRoot extends HTMLElement {
             if (e.detail.result) this.state.sessionResult = e.detail.result;
             this.render();
         });
+    }
+
+    checkAuthentication() {
+        const urlParams = new URLSearchParams(window.location.search);
+
+        // Check for JWT token
+        const jwtToken = urlParams.get("jwt") || urlParams.get("token");
+
+        // Check for signed URL params
+        const hasSignedUrl = urlParams.get("user") && urlParams.get("sig");
+
+        // User is authenticated if they have JWT or signed URL params
+        this.state.isAuthenticated = !!(jwtToken || hasSignedUrl);
+
+        // If not authenticated, show login view
+        if (!this.state.isAuthenticated) {
+            this.state.view = 'login';
+        }
+
+        this.render();
     }
 
     async checkConfigStatus() {
@@ -125,6 +148,10 @@ class AppRoot extends HTMLElement {
         let currentView;
 
         switch (this.state.view) {
+            case 'login':
+                currentView = document.createElement('view-login');
+                currentView.config = this.appConfig;
+                break;
             case 'missions':
                 currentView = document.createElement('view-missions');
                 break;
@@ -145,6 +172,41 @@ class AppRoot extends HTMLElement {
 
         currentView.classList.add('fade-in');
         this.viewContainer.appendChild(currentView);
+
+        // Broadcast height to parent for iframe resizing
+        this.broadcastHeight();
+    }
+
+    broadcastHeight() {
+        // Only broadcast if we're in an iframe
+        if (window.parent === window) return;
+
+        // Use requestAnimationFrame to ensure DOM is rendered
+        requestAnimationFrame(() => {
+            const height = document.body.scrollHeight;
+            window.parent.postMessage({
+                type: 'sg-resize',
+                height: height
+            }, '*');
+        });
+
+        // Also set up a MutationObserver to catch dynamic content changes
+        if (!this._heightObserver) {
+            this._heightObserver = new MutationObserver(() => {
+                if (window.parent !== window) {
+                    const height = document.body.scrollHeight;
+                    window.parent.postMessage({
+                        type: 'sg-resize',
+                        height: height
+                    }, '*');
+                }
+            });
+            this._heightObserver.observe(document.body, {
+                childList: true,
+                subtree: true,
+                attributes: true
+            });
+        }
     }
 }
 
