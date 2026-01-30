@@ -35,6 +35,7 @@ from server.simple_tracker import simpletrack
 from server.config_utils import get_project_id
 from server.course_auth import course_auth
 from server.teachable_auth import teachable_auth
+from server.usage_tracker import usage_tracker
 
 
 # Rate Limiting
@@ -170,33 +171,33 @@ if os.path.exists("dist/assets"):
     app.mount("/assets", StaticFiles(directory="dist/assets"), name="assets")
 if os.path.exists("dist/audio-processors"):
     app.mount("/audio-processors", StaticFiles(directory="dist/audio-processors"), name="audio-processors")
-# In-memory storage for valid session tokens (Token -> Timestamp)
+# In-memory storage for valid session tokens (Token -> {timestamp, user_id})
 # Note: For multi-instance deployments, consider using Redis for token storage
 import threading
 _token_lock = threading.Lock()
-valid_tokens: Dict[str, float] = {}
+valid_tokens: Dict[str, Dict] = {}
 TOKEN_EXPIRY_SECONDS = 30
 
 def cleanup_tokens():
     """Remove expired tokens (thread-safe)."""
     current_time = time.time()
     with _token_lock:
-        expired = [token for token, ts in valid_tokens.items() if current_time - ts > TOKEN_EXPIRY_SECONDS]
+        expired = [token for token, data in valid_tokens.items() if current_time - data.get("timestamp", 0) > TOKEN_EXPIRY_SECONDS]
         for token in expired:
             valid_tokens.pop(token, None)
 
-def add_token(token: str) -> None:
-    """Add a new token (thread-safe)."""
+def add_token(token: str, user_id: str = "") -> None:
+    """Add a new token with optional user_id (thread-safe)."""
     with _token_lock:
-        valid_tokens[token] = time.time()
+        valid_tokens[token] = {"timestamp": time.time(), "user_id": user_id}
 
-def consume_token(token: str) -> bool:
-    """Consume a token if valid (thread-safe). Returns True if token was valid."""
+def consume_token(token: str) -> Optional[Dict]:
+    """Consume a token if valid (thread-safe). Returns token data if valid, None otherwise."""
     with _token_lock:
         if token in valid_tokens:
-            del valid_tokens[token]
-            return True
-        return False
+            data = valid_tokens.pop(token)
+            return data
+        return None
 
 @app.get("/api/status")
 async def get_status():
@@ -370,12 +371,30 @@ async def authenticate(request: Request):
                 logger.warning(f"ReCAPTCHA score too low: {validation_result.get('score')}")
                 raise HTTPException(status_code=403, detail="ReCAPTCHA score too low")
 
+        # Check usage limits for authenticated users
+        user_id = course_user or ""
+        if user_id:
+            can_start, usage_message = usage_tracker.can_start(user_id)
+            if not can_start:
+                logger.warning(f"User {user_id[:20]}... exceeded daily limit")
+                raise HTTPException(status_code=429, detail=usage_message)
+            remaining_seconds = usage_tracker.get_remaining(user_id)
+        else:
+            remaining_seconds = SESSION_TIME_LIMIT
+
+        # Calculate effective session limit (minimum of configured limit and remaining quota)
+        effective_session_limit = min(SESSION_TIME_LIMIT, int(remaining_seconds))
+
         # Generate cryptographically secure token
         session_token = secrets.token_urlsafe(32)
         cleanup_tokens()
-        add_token(session_token)
-        
-        return {"session_token": session_token, "session_time_limit": SESSION_TIME_LIMIT}
+        add_token(session_token, user_id)
+
+        return {
+            "session_token": session_token,
+            "session_time_limit": effective_session_limit,
+            "daily_remaining": int(remaining_seconds)
+        }
         
     except Exception as e:
         logger.error(f"Auth error: {e}")
@@ -390,14 +409,22 @@ async def websocket_endpoint(websocket: WebSocket, token: Optional[str] = None):
     Requires a valid session token generated via /api/auth.
     """
     await websocket.accept()
-    
+
     # Validate and consume token (one-time use, thread-safe)
-    if not token or not consume_token(token):
+    token_data = consume_token(token) if token else None
+    if not token_data:
         logger.warning("Invalid or missing session token")
         await websocket.close(code=4003, reason="Unauthorized")
         return
-    
-    logger.info("WebSocket connection accepted and authenticated")
+
+    user_id = token_data.get("user_id", "")
+    session_id = secrets.token_urlsafe(16)
+
+    # Start usage tracking
+    if user_id:
+        usage_tracker.start(session_id, user_id)
+
+    logger.info(f"WebSocket connection accepted (user: {user_id[:20] if user_id else 'anonymous'}...)")
 
     # Wait for initial setup message
     setup_config = None
@@ -489,8 +516,14 @@ async def websocket_endpoint(websocket: WebSocket, token: Optional[str] = None):
                 # Forward events (transcriptions, etc) to client
                 await websocket.send_json(event)
 
+    # Calculate effective timeout based on user's remaining quota
+    effective_timeout = SESSION_TIME_LIMIT
+    if user_id:
+        remaining = usage_tracker.get_remaining(user_id)
+        effective_timeout = min(SESSION_TIME_LIMIT, int(remaining))
+
     try:
-        await asyncio.wait_for(run_session(), timeout=SESSION_TIME_LIMIT)
+        await asyncio.wait_for(run_session(), timeout=effective_timeout)
     except asyncio.TimeoutError:
         logger.info("Session time limit reached")
         await websocket.close(code=1000, reason="Session time limit reached")
@@ -498,6 +531,11 @@ async def websocket_endpoint(websocket: WebSocket, token: Optional[str] = None):
         logger.error(f"Error in Gemini session: {e}")
     finally:
         receive_task.cancel()
+        # End usage tracking
+        if user_id:
+            duration = usage_tracker.end(session_id)
+            if duration:
+                logger.info(f"Session duration: {duration:.0f}s for user {user_id[:20]}...")
         # Ensure websocket is closed if not already
         try:
             await websocket.close()

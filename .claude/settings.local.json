@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "WebFetch(domain:docs.teachable.com)"
+      "WebFetch(domain:docs.teachable.com)",
+      "WebFetch(domain:courses.smartergerman.com)"
     ]
   }
 }
