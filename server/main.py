@@ -30,6 +30,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from dotenv import load_dotenv
 from server.recaptcha_validator import RecaptchaValidator
 from server.gemini_live import GeminiLive
+from server.ai_provider import AILiveProvider, get_provider_info
 from server.fingerprint import generate_fingerprint
 from server.simple_tracker import simpletrack
 from server.config_utils import get_project_id
@@ -70,6 +71,12 @@ CORS_ORIGINS = os.getenv("CORS_ORIGINS", "")  # Comma-separated list of allowed 
 MAX_MESSAGE_SIZE = int(os.getenv("MAX_MESSAGE_SIZE", "1048576"))  # 1MB default
 # Allowed frame ancestors for CSP (comma-separated) - controls which sites can embed this app in an iframe
 ALLOWED_FRAME_ANCESTORS = os.getenv("ALLOWED_FRAME_ANCESTORS", "")
+
+# AI Provider configuration
+AI_PROVIDER = os.getenv("AI_PROVIDER", "gemini")  # "gemini" or "qwen"
+QWEN_API_KEY = os.getenv("QWEN_API_KEY", "")
+QWEN_MODEL = os.getenv("QWEN_MODEL", "qwen3-omni-flash-realtime")
+QWEN_REGION = os.getenv("QWEN_REGION", "intl")  # "intl" for Singapore, "cn" for Beijing
 
 # Initialize FastAPI
 app = FastAPI()
@@ -198,6 +205,71 @@ def consume_token(token: str) -> Optional[Dict]:
             data = valid_tokens.pop(token)
             return data
         return None
+
+
+def get_ai_provider() -> AILiveProvider:
+    """
+    Factory function to create the appropriate AI provider based on configuration.
+
+    Returns:
+        AILiveProvider instance (GeminiLive or QwenOmniLive)
+    """
+    if AI_PROVIDER == "qwen":
+        if not QWEN_API_KEY:
+            logger.error("QWEN_API_KEY not set but AI_PROVIDER=qwen")
+            raise ValueError("Qwen provider requires QWEN_API_KEY")
+
+        from server.qwen_live import QwenOmniLive
+        return QwenOmniLive(
+            api_key=QWEN_API_KEY,
+            model=QWEN_MODEL,
+            region=QWEN_REGION,
+            input_sample_rate=16000
+        )
+    else:
+        return GeminiLive(
+            project_id=PROJECT_ID,
+            location=LOCATION,
+            model=MODEL,
+            input_sample_rate=16000
+        )
+
+
+@app.get("/api/provider")
+async def get_provider_endpoint():
+    """
+    Returns information about the current AI provider.
+
+    Used by frontend to determine if GDPR consent is required.
+    """
+    provider = get_ai_provider()
+    return {
+        "provider": AI_PROVIDER,
+        **get_provider_info(provider)
+    }
+
+
+@app.get("/api/privacy")
+async def get_privacy():
+    """Returns the privacy policy as markdown."""
+    try:
+        with open("PRIVACY.md", "r", encoding="utf-8") as f:
+            content = f.read()
+        return Response(content=content, media_type="text/markdown")
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Privacy policy not found")
+
+
+@app.get("/api/terms")
+async def get_terms():
+    """Returns the terms of service as markdown."""
+    try:
+        with open("TERMS.md", "r", encoding="utf-8") as f:
+            content = f.read()
+        return Response(content=content, media_type="text/markdown")
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Terms of service not found")
+
 
 @app.get("/api/status")
 async def get_status():
@@ -449,12 +521,9 @@ async def websocket_endpoint(websocket: WebSocket, token: Optional[str] = None):
         # The event queue handles the JSON message, but we might want to do something else here
         pass
 
-    gemini_client = GeminiLive(
-        project_id=PROJECT_ID,
-        location=LOCATION,
-        model=MODEL,
-        input_sample_rate=16000
-    )
+    # Get AI provider based on configuration
+    ai_client = get_ai_provider()
+    logger.info(f"Using AI provider: {ai_client.provider_name} (jurisdiction: {ai_client.data_jurisdiction})")
 
     async def receive_from_client():
         try:
@@ -504,7 +573,7 @@ async def websocket_endpoint(websocket: WebSocket, token: Optional[str] = None):
     receive_task = asyncio.create_task(receive_from_client())
 
     async def run_session():
-        async for event in gemini_client.start_session(
+        async for event in ai_client.start_session(
             audio_input_queue=audio_input_queue,
             video_input_queue=video_input_queue,
             text_input_queue=text_input_queue,

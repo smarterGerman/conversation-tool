@@ -19,11 +19,28 @@ import base64
 import json
 import logging
 import inspect
-from typing import Optional, List, Dict, Callable
+from typing import Optional, List, Dict, Callable, AsyncGenerator
+
+from server.ai_provider import AILiveProvider
 
 logger = logging.getLogger(__name__)
 
-class GeminiLive:
+
+class GeminiLive(AILiveProvider):
+    """
+    Google Gemini Live API provider for real-time speech-to-speech conversations.
+
+    Data is processed via Google Cloud (US/EU), covered by Google's Data Processing
+    Addendum and the EU-US Data Privacy Framework.
+    """
+
+    @property
+    def provider_name(self) -> str:
+        return "Google Gemini"
+
+    @property
+    def data_jurisdiction(self) -> str:
+        return "US/EU"
     def __init__(self, project_id: str, location: str, model: str, input_sample_rate: int = 16000):
         self.project_id = project_id
         self.location = location
@@ -41,14 +58,14 @@ class GeminiLive:
         return func
 
     async def start_session(
-        self, 
+        self,
         audio_input_queue: asyncio.Queue,
         video_input_queue: asyncio.Queue,
         text_input_queue: asyncio.Queue,
         audio_output_callback: Callable,
         audio_interrupt_callback: Optional[Callable] = None,
         setup_config: Optional[Dict] = None
-    ):
+    ) -> AsyncGenerator[Dict, None]:
         """
         Connects to Gemini Live and proxies data between queues/callbacks and the session.
         """
