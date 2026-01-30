@@ -54,8 +54,10 @@ logger = logging.getLogger(__name__)
 PROJECT_ID = get_project_id()
 LOCATION = os.getenv("LOCATION", "us-central1")
 MODEL = os.getenv("MODEL", "gemini-live-2.5-flash-native-audio")
-# Session time limit in seconds (default 10 minutes)
-SESSION_TIME_LIMIT = int(os.getenv("SESSION_TIME_LIMIT", "600"))
+# Session time limit in seconds (default 5 minutes)
+SESSION_TIME_LIMIT = int(os.getenv("SESSION_TIME_LIMIT", "300"))
+# Access password for the tool (optional but recommended)
+ACCESS_PASSWORD = os.getenv("ACCESS_PASSWORD", "")
 RECAPTCHA_SITE_KEY = os.getenv("RECAPTCHA_SITE_KEY")
 REDIS_URL = os.getenv("REDIS_URL")
 GLOBAL_RATE_LIMIT = os.getenv("GLOBAL_RATE_LIMIT", "1000 per hour")
@@ -209,7 +211,8 @@ async def get_status():
         "mode": mode,
         "missing": missing,
         "recaptcha_site_key": RECAPTCHA_SITE_KEY if RECAPTCHA_SITE_KEY else None,
-        "session_time_limit": SESSION_TIME_LIMIT
+        "session_time_limit": SESSION_TIME_LIMIT,
+        "password_required": bool(ACCESS_PASSWORD)
     }
 
 @app.get("/{full_path:path}")
@@ -229,12 +232,19 @@ async def serve_spa(full_path: str):
 @limiter.limit(PER_USER_RATE_LIMIT, key_func=get_fingerprint_key)
 async def authenticate(request: Request):
     """
-    Validates ReCAPTCHA and issues a temporary session token for WebSocket connection.
+    Validates password (if set), ReCAPTCHA and issues a temporary session token for WebSocket connection.
     """
     try:
         data = await request.json()
         recaptcha_token = data.get("recaptcha_token")
-        
+        password = data.get("password")
+
+        # Check access password if configured
+        if ACCESS_PASSWORD:
+            if not password or password != ACCESS_PASSWORD:
+                logger.warning("Invalid or missing access password")
+                raise HTTPException(status_code=403, detail="Invalid access password")
+
         # Check if ReCAPTCHA is configured
         if not RECAPTCHA_SITE_KEY:
              logger.warning("RECAPTCHA_SITE_KEY not set: Skipping validation (Simple Mode)")

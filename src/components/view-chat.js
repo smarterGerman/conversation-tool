@@ -196,6 +196,57 @@ class ViewChat extends HTMLElement {
             </div>
         </div>
 
+        <!-- Password Dialog -->
+        <div id="password-dialog" class="hidden" style="
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            z-index: 20;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        ">
+            <div style="background: var(--braun-white); color: var(--braun-black); padding: var(--spacing-xl); border-radius: var(--radius-lg); max-width: 400px; text-align: center; box-shadow: var(--shadow-lg);">
+                <h3 style="margin-bottom: var(--spacing-sm); color: var(--braun-dark);">Access Required</h3>
+                <p style="margin-bottom: var(--spacing-md); line-height: 1.5; color: var(--color-text-sub);">
+                    Enter your access password to start practicing.
+                </p>
+                <input id="password-input" type="password" placeholder="Password" style="
+                    width: 100%;
+                    padding: 12px 16px;
+                    border: 2px solid var(--braun-mid);
+                    border-radius: var(--radius-md);
+                    font-size: 1rem;
+                    margin-bottom: var(--spacing-md);
+                    box-sizing: border-box;
+                ">
+                <p id="password-error" class="hidden" style="color: var(--braun-orange); font-size: 0.85rem; margin-bottom: var(--spacing-sm);">
+                    Incorrect password. Please try again.
+                </p>
+                <div style="display: flex; gap: var(--spacing-sm);">
+                    <button id="cancel-password" style="
+                        flex: 1;
+                        background: var(--braun-light);
+                        color: var(--braun-dark);
+                        border: none;
+                        padding: 12px 24px;
+                        border-radius: var(--radius-md);
+                        cursor: pointer;
+                        font-weight: 700;
+                    ">Cancel</button>
+                    <button id="submit-password" style="
+                        flex: 1;
+                        background: var(--braun-orange);
+                        color: white;
+                        border: none;
+                        padding: 12px 24px;
+                        border-radius: var(--radius-md);
+                        cursor: pointer;
+                        font-weight: 700;
+                        box-shadow: var(--shadow-raised);
+                    ">Submit</button>
+                </div>
+            </div>
+        </div>
+
       </div>
     `;
 
@@ -206,6 +257,87 @@ class ViewChat extends HTMLElement {
       rateLimitDialog.classList.add("hidden");
       rateLimitDialog.style.display = "none";
     });
+
+    // Password dialog elements
+    const passwordDialog = this.querySelector("#password-dialog");
+    const passwordInput = this.querySelector("#password-input");
+    const passwordError = this.querySelector("#password-error");
+    const cancelPasswordBtn = this.querySelector("#cancel-password");
+    const submitPasswordBtn = this.querySelector("#submit-password");
+
+    // Store session password and whether it's required
+    let sessionPassword = sessionStorage.getItem("sg_access_pw") || "";
+    let passwordRequired = false;
+
+    // Check if password is required from API status
+    fetch("/api/status")
+      .then((res) => res.json())
+      .then((status) => {
+        passwordRequired = status.password_required || false;
+      })
+      .catch(() => {});
+
+    cancelPasswordBtn.addEventListener("click", () => {
+      passwordDialog.classList.add("hidden");
+      passwordDialog.style.display = "none";
+      passwordInput.value = "";
+      passwordError.classList.add("hidden");
+    });
+
+    // Helper to request password
+    const requestPassword = () => {
+      return new Promise((resolve, reject) => {
+        passwordDialog.classList.remove("hidden");
+        passwordDialog.style.display = "flex";
+        passwordInput.value = "";
+        passwordError.classList.add("hidden");
+        passwordInput.focus();
+
+        const handleSubmit = () => {
+          const pw = passwordInput.value.trim();
+          if (pw) {
+            sessionPassword = pw;
+            sessionStorage.setItem("sg_access_pw", pw);
+            passwordDialog.classList.add("hidden");
+            passwordDialog.style.display = "none";
+            submitPasswordBtn.removeEventListener("click", handleSubmit);
+            passwordInput.removeEventListener("keydown", handleKeydown);
+            resolve(pw);
+          }
+        };
+
+        const handleKeydown = (e) => {
+          if (e.key === "Enter") handleSubmit();
+          if (e.key === "Escape") {
+            cancelPasswordBtn.click();
+            reject(new Error("Password entry cancelled"));
+          }
+        };
+
+        submitPasswordBtn.addEventListener("click", handleSubmit);
+        passwordInput.addEventListener("keydown", handleKeydown);
+
+        // Update cancel to reject
+        const handleCancel = () => {
+          cancelPasswordBtn.removeEventListener("click", handleCancel);
+          submitPasswordBtn.removeEventListener("click", handleSubmit);
+          passwordInput.removeEventListener("keydown", handleKeydown);
+          reject(new Error("Password entry cancelled"));
+        };
+        cancelPasswordBtn.addEventListener("click", handleCancel, { once: true });
+      });
+    };
+
+    // Helper to show password error
+    const showPasswordError = () => {
+      sessionPassword = "";
+      sessionStorage.removeItem("sg_access_pw");
+      passwordError.classList.remove("hidden");
+      passwordDialog.classList.remove("hidden");
+      passwordDialog.style.display = "flex";
+      passwordInput.value = "";
+      passwordInput.focus();
+    };
 
     // Helper to perform navigation
     const doEndSession = () => {
@@ -553,6 +685,22 @@ When ending:
           // 1. Connect to WebSocket
           console.log("🔌 [App] Connecting to backend...");
 
+          // Check if password is required and get it
+          if (passwordRequired && !sessionPassword) {
+            try {
+              await requestPassword();
+            } catch (err) {
+              console.log("Password entry cancelled");
+              isSpeaking = false;
+              micBtn.classList.remove('active');
+              micBtn.innerHTML = `<span style="font-size: 1rem; font-weight: 800; letter-spacing: 0.02em;">Start Conversation</span>`;
+              userViz.disconnect();
+              modelViz.disconnect();
+              statusEl.textContent = "";
+              return;
+            }
+          }
+
           // Execute Recaptcha
           let token = "";
           try {
@@ -572,7 +720,7 @@ When ending:
             return;
           }
 
-          await this.client.connect(token);
+          await this.client.connect(token, passwordRequired ? sessionPassword : null);
 
           // 2. Start Audio Stream
           console.log("[App] Starting audio stream...");
@@ -627,6 +775,9 @@ When ending:
           if (err.status === 429) {
             rateLimitDialog.classList.remove("hidden");
             rateLimitDialog.style.display = "flex";
+          } else if (err.status === 403) {
+            // Wrong password
+            showPasswordError();
           } else {
             alert("Failed to start session: " + err.message);
           }

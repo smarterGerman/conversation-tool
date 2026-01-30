@@ -37,4 +37,7 @@ jobs:
             --source . \
             --region ${{ env.REGION }} \
             --allow-unauthenticated \
+            --set-env-vars "DEV_MODE=false" \
+            --set-env-vars "CORS_ORIGINS=${{ vars.CORS_ORIGINS || '' }}" \
+            --set-env-vars "ACCESS_PASSWORD=${{ secrets.ACCESS_PASSWORD || '' }}" \
             --quiet
