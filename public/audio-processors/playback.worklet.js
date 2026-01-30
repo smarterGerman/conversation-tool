@@ -22,13 +22,18 @@ class PCMProcessor extends AudioWorkletProcessor {
   constructor() {
     super();
     this.audioQueue = [];
+    this.maxQueueSize = 100; // Prevent memory exhaustion from unbounded queue growth
 
     this.port.onmessage = (event) => {
       if (event.data === "interrupt") {
         // Clear the queue on interrupt
         this.audioQueue = [];
       } else if (event.data instanceof Float32Array) {
-        // Add audio data to the queue
+        // Add audio data to the queue with overflow protection
+        if (this.audioQueue.length >= this.maxQueueSize) {
+          // Drop oldest chunks to prevent memory exhaustion
+          this.audioQueue.shift();
+        }
         this.audioQueue.push(event.data);
       }
     };

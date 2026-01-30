@@ -37,6 +37,7 @@ from server.config_utils import get_project_id
 from server.course_auth import course_auth
 from server.teachable_auth import teachable_auth
 from server.usage_tracker import usage_tracker
+from server.redis_storage import get_storage, is_redis_available
 
 
 # Rate Limiting
@@ -178,33 +179,27 @@ if os.path.exists("dist/assets"):
     app.mount("/assets", StaticFiles(directory="dist/assets"), name="assets")
 if os.path.exists("dist/audio-processors"):
     app.mount("/audio-processors", StaticFiles(directory="dist/audio-processors"), name="audio-processors")
-# In-memory storage for valid session tokens (Token -> {timestamp, user_id})
-# Note: For multi-instance deployments, consider using Redis for token storage
-import threading
-_token_lock = threading.Lock()
-valid_tokens: Dict[str, Dict] = {}
+# Token storage - uses Redis when available, memory fallback
+# Redis provides multi-instance support for Cloud Run deployments
 TOKEN_EXPIRY_SECONDS = 30
-
-def cleanup_tokens():
-    """Remove expired tokens (thread-safe)."""
-    current_time = time.time()
-    with _token_lock:
-        expired = [token for token, data in valid_tokens.items() if current_time - data.get("timestamp", 0) > TOKEN_EXPIRY_SECONDS]
-        for token in expired:
-            valid_tokens.pop(token, None)
+TOKEN_PREFIX = "session_token:"
 
 def add_token(token: str, user_id: str = "") -> None:
-    """Add a new token with optional user_id (thread-safe)."""
-    with _token_lock:
-        valid_tokens[token] = {"timestamp": time.time(), "user_id": user_id}
+    """Add a new token with optional user_id (Redis-backed)."""
+    storage = get_storage()
+    token_data = {"timestamp": time.time(), "user_id": user_id}
+    storage.set_json(f"{TOKEN_PREFIX}{token}", token_data, ttl=TOKEN_EXPIRY_SECONDS)
 
 def consume_token(token: str) -> Optional[Dict]:
-    """Consume a token if valid (thread-safe). Returns token data if valid, None otherwise."""
-    with _token_lock:
-        if token in valid_tokens:
-            data = valid_tokens.pop(token)
-            return data
-        return None
+    """Consume a token if valid (atomic). Returns token data if valid, None otherwise."""
+    storage = get_storage()
+    key = f"{TOKEN_PREFIX}{token}"
+    # Get and delete atomically
+    data = storage.get_json(key)
+    if data:
+        storage.delete(key)
+        return data
+    return None
 
 
 def get_ai_provider() -> AILiveProvider:
@@ -472,7 +467,6 @@ async def authenticate(request: Request):
 
         # Generate cryptographically secure token
         session_token = secrets.token_urlsafe(32)
-        cleanup_tokens()
         add_token(session_token, user_id)
 
         return {
@@ -492,10 +486,45 @@ async def websocket_endpoint(websocket: WebSocket, token: Optional[str] = None):
     """
     WebSocket endpoint for Gemini Live.
     Requires a valid session token generated via /api/auth.
+
+    Token can be provided via:
+    1. First WebSocket message (preferred for security - not logged in URLs)
+    2. URL query parameter (legacy support)
     """
     await websocket.accept()
 
-    # Validate and consume token (one-time use, thread-safe)
+    # If token not in URL, expect it as first message (security improvement)
+    if not token:
+        try:
+            # Wait for auth message (with timeout)
+            auth_message = await asyncio.wait_for(
+                websocket.receive_text(),
+                timeout=5.0
+            )
+            auth_data = json.loads(auth_message)
+            if auth_data.get("type") == "auth":
+                token = auth_data.get("token")
+                logger.info("Received token via WebSocket message (secure method)")
+            else:
+                # Not an auth message, might be legacy client sending setup first
+                # Close and require proper auth
+                logger.warning("Expected auth message, got different message type")
+                await websocket.close(code=4003, reason="Authentication required")
+                return
+        except asyncio.TimeoutError:
+            logger.warning("Timeout waiting for auth message")
+            await websocket.close(code=4003, reason="Authentication timeout")
+            return
+        except json.JSONDecodeError:
+            logger.warning("Invalid JSON in auth message")
+            await websocket.close(code=4003, reason="Invalid auth message")
+            return
+        except Exception as e:
+            logger.warning(f"Error receiving auth message: {e}")
+            await websocket.close(code=4003, reason="Authentication failed")
+            return
+
+    # Validate and consume token (one-time use)
     token_data = consume_token(token) if token else None
     if not token_data:
         logger.warning("Invalid or missing session token")
@@ -514,7 +543,7 @@ async def websocket_endpoint(websocket: WebSocket, token: Optional[str] = None):
     # Wait for initial setup message
     setup_config = None
     try:
-        # We expect the first message to be the setup JSON
+        # We expect the next message to be the setup JSON
         message = await websocket.receive_text()
         initial_data = json.loads(message)
         if "setup" in initial_data:
@@ -539,9 +568,36 @@ async def websocket_endpoint(websocket: WebSocket, token: Optional[str] = None):
     logger.info(f"Using AI provider: {ai_client.provider_name} (jurisdiction: {ai_client.data_jurisdiction})")
 
     async def receive_from_client():
+        # Per-WebSocket rate limiting (token bucket algorithm)
+        # Allows bursts but limits sustained rate
+        max_messages_per_second = 100  # Limit sustained rate
+        bucket_size = 200  # Allow short bursts
+        tokens = bucket_size
+        last_refill = time.time()
+        rate_limit_warnings = 0
+
         try:
             while True:
                 message = await websocket.receive()
+
+                # Refill tokens based on elapsed time
+                now = time.time()
+                elapsed = now - last_refill
+                tokens = min(bucket_size, tokens + elapsed * max_messages_per_second)
+                last_refill = now
+
+                # Check rate limit
+                if tokens < 1:
+                    rate_limit_warnings += 1
+                    if rate_limit_warnings <= 3:
+                        logger.warning(f"WebSocket rate limit exceeded for session {session_id[:8]}")
+                    if rate_limit_warnings >= 10:
+                        # Too many violations, close connection
+                        logger.error(f"Closing WebSocket due to rate limit abuse: {session_id[:8]}")
+                        await websocket.close(code=4029, reason="Rate limit exceeded")
+                        return
+                    continue  # Drop this message
+                tokens -= 1
 
                 if "bytes" in message and message["bytes"]:
                     # Validate message size

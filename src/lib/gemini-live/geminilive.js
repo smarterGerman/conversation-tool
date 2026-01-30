@@ -163,6 +163,7 @@ export class GeminiLiveAPI {
     this.connected = false;
     this.webSocket = null;
     this.lastSetupMessage = null; // Store the last setup message
+    this._pendingSessionToken = null; // Token to send after WebSocket opens
 
     // Default callbacks
     this.onReceiveResponse = (message) => {
@@ -240,7 +241,7 @@ export class GeminiLiveAPI {
 
   async connect(token, authOptions = {}) {
     try {
-      // 1. Authenticate
+      // 1. Authenticate via REST API
       const authPayload = { recaptcha_token: token };
 
       // Add auth credentials based on what's provided
@@ -270,17 +271,17 @@ export class GeminiLiveAPI {
       }
 
       const data = await response.json();
-      const sessionToken = data.session_token;
+      this._pendingSessionToken = data.session_token;
 
-      // 2. Connect WebSocket
+      // 2. Connect WebSocket WITHOUT token in URL (security improvement)
+      // Token is sent as first message to avoid logging in browser history/DevTools
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      const wsUrl = `${protocol}//${window.location.host}/ws?token=${sessionToken}`;
+      const wsUrl = `${protocol}//${window.location.host}/ws`;
 
       this.setupWebSocketToService(wsUrl);
     } catch (error) {
       console.error("Connection error:", error);
       // Re-throw to allow caller to handle UI (e.g. 429 modal)
-      // Only call onErrorMessage for non-connection errors if needed, but here we expect caller to handle.
       throw error;
     }
   }
@@ -318,9 +319,14 @@ export class GeminiLiveAPI {
       return;
     }
 
-    const messageData = JSON.parse(messageEvent.data);
-    const message = new MultimodalLiveResponseMessage(messageData);
-    this.onReceiveResponse(message);
+    try {
+      const messageData = JSON.parse(messageEvent.data);
+      const message = new MultimodalLiveResponseMessage(messageData);
+      this.onReceiveResponse(message);
+    } catch (parseError) {
+      console.error("Failed to parse WebSocket message:", parseError);
+      // Don't crash the handler - log and continue
+    }
   }
 
   setupWebSocketToService(url) {
@@ -345,6 +351,13 @@ export class GeminiLiveAPI {
       console.log("websocket open: ", event);
       this.connected = true;
       this.totalBytesSent = 0;
+
+      // Send auth token as first message (security improvement - not in URL)
+      if (this._pendingSessionToken) {
+        this.sendMessage({ type: "auth", token: this._pendingSessionToken });
+        this._pendingSessionToken = null; // Clear after sending
+      }
+
       this.sendInitialSetupMessages();
       this.onConnectionStarted();
       if (this.onOpen) this.onOpen(event);

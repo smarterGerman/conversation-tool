@@ -36,6 +36,8 @@ from typing import Dict, Any, Optional, List
 from urllib.parse import urlencode
 import requests
 
+from server.redis_storage import get_storage
+
 logger = logging.getLogger(__name__)
 
 # Configuration from environment
@@ -54,17 +56,25 @@ TEACHABLE_TOKEN_URL = "https://developers.teachable.com/v1/current_user/oauth2/t
 TEACHABLE_USER_URL = "https://developers.teachable.com/v1/current_user/me"
 TEACHABLE_COURSES_URL = "https://developers.teachable.com/v1/current_user/enrolled_courses"
 
-# State storage (in production, use Redis or similar)
-# Maps state -> {created_at, code_verifier}
-_oauth_states: Dict[str, Dict] = {}
+# OAuth state storage - uses Redis when available for multi-instance support
+OAUTH_STATE_PREFIX = "oauth_state:"
+OAUTH_STATE_TTL = 600  # 10 minutes
 
-# Clean up old states periodically
-def _cleanup_states():
-    """Remove states older than 10 minutes"""
-    now = time.time()
-    expired = [k for k, v in _oauth_states.items() if now - v.get("created_at", 0) > 600]
-    for k in expired:
-        del _oauth_states[k]
+
+def _store_oauth_state(state: str, data: Dict) -> None:
+    """Store OAuth state in Redis with TTL"""
+    storage = get_storage()
+    storage.set_json(f"{OAUTH_STATE_PREFIX}{state}", data, ttl=OAUTH_STATE_TTL)
+
+
+def _get_and_delete_oauth_state(state: str) -> Optional[Dict]:
+    """Get and delete OAuth state atomically (prevents replay attacks)"""
+    storage = get_storage()
+    key = f"{OAUTH_STATE_PREFIX}{state}"
+    data = storage.get_json(key)
+    if data:
+        storage.delete(key)
+    return data
 
 
 class TeachableAuth:
@@ -94,8 +104,6 @@ class TeachableAuth:
         if not self.is_enabled():
             raise ValueError("Teachable OAuth is not configured")
 
-        _cleanup_states()
-
         # Generate state and PKCE code verifier
         state = secrets.token_urlsafe(32)
         code_verifier = secrets.token_urlsafe(64)
@@ -105,12 +113,12 @@ class TeachableAuth:
         import base64
         code_challenge = base64.urlsafe_b64encode(code_challenge).decode().rstrip("=")
 
-        # Store state
-        _oauth_states[state] = {
+        # Store state in Redis with TTL (auto-expires, no cleanup needed)
+        _store_oauth_state(state, {
             "created_at": time.time(),
             "code_verifier": code_verifier,
             "final_redirect": final_redirect
-        }
+        })
 
         # Build authorization URL
         params = {
@@ -142,8 +150,8 @@ class TeachableAuth:
         if not self.is_enabled():
             return {"valid": False, "error": "Teachable OAuth not configured"}
 
-        # Verify state
-        state_data = _oauth_states.pop(state, None)
+        # Verify and consume state atomically (prevents replay attacks)
+        state_data = _get_and_delete_oauth_state(state)
         if not state_data:
             return {"valid": False, "error": "Invalid or expired state"}
 

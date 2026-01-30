@@ -20,6 +20,12 @@ import './view-summary.js';
 import './view-login.js';
 import './text-cycler.js';
 
+// Allowed parent origins for iframe communication (must match ALLOWED_FRAME_ANCESTORS)
+const ALLOWED_PARENT_ORIGINS = [
+    'https://learn.smartergerman.com',
+    'https://courses.smartergerman.com'
+];
+
 class AppRoot extends HTMLElement {
     constructor() {
         super();
@@ -52,7 +58,6 @@ class AppRoot extends HTMLElement {
             this.state.view = e.detail.view;
             if (e.detail.mission) this.state.selectedMission = e.detail.mission;
             if (e.detail.language) this.state.selectedLanguage = e.detail.language;
-            if (e.detail.fromLanguage) this.state.selectedFromLanguage = e.detail.fromLanguage;
             if (e.detail.mode) this.state.selectedMode = e.detail.mode;
             if (e.detail.result) this.state.sessionResult = e.detail.result;
             this.render();
@@ -87,30 +92,12 @@ class AppRoot extends HTMLElement {
             // Store config for use by other components
             this.appConfig = data;
 
-            // Dynamically load ReCAPTCHA if configured
-            if (data.recaptcha_site_key) {
-                this.loadRecaptchaScript(data.recaptcha_site_key);
-            }
-
             if (data.mode === 'simple') {
                 this.showSimpleModeWarning(data.missing);
             }
         } catch (e) {
             console.warn("Failed to check config status:", e);
         }
-    }
-
-    loadRecaptchaScript(siteKey) {
-        // Avoid loading multiple times
-        if (document.getElementById('recaptcha-script') || window.grecaptcha) {
-            return;
-        }
-        const script = document.createElement('script');
-        script.id = 'recaptcha-script';
-        script.src = `https://www.google.com/recaptcha/enterprise.js?render=${siteKey}`;
-        script.async = true;
-        script.defer = true;
-        document.head.appendChild(script);
     }
 
     showSimpleModeWarning(missing) {
@@ -159,7 +146,6 @@ class AppRoot extends HTMLElement {
                 currentView = document.createElement('view-chat');
                 currentView.mission = this.state.selectedMission;
                 currentView.language = this.state.selectedLanguage;
-                currentView.fromLanguage = this.state.selectedFromLanguage;
                 currentView.mode = this.state.selectedMode;
                 break;
             case 'summary':
@@ -181,13 +167,34 @@ class AppRoot extends HTMLElement {
         // Only broadcast if we're in an iframe
         if (window.parent === window) return;
 
+        // Helper to send to allowed origins only (security fix: no wildcard)
+        const sendHeightToParent = (height) => {
+            // Try to determine parent origin from referrer
+            let targetOrigin = null;
+            try {
+                if (document.referrer) {
+                    const referrerUrl = new URL(document.referrer);
+                    const referrerOrigin = referrerUrl.origin;
+                    if (ALLOWED_PARENT_ORIGINS.includes(referrerOrigin)) {
+                        targetOrigin = referrerOrigin;
+                    }
+                }
+            } catch (e) {
+                // Referrer parsing failed, continue with fallback
+            }
+
+            // If we couldn't determine origin, send to all allowed origins
+            // This is safe because only the actual parent will receive the message
+            const origins = targetOrigin ? [targetOrigin] : ALLOWED_PARENT_ORIGINS;
+            origins.forEach(origin => {
+                window.parent.postMessage({ type: 'sg-resize', height }, origin);
+            });
+        };
+
         // Use requestAnimationFrame to ensure DOM is rendered
         requestAnimationFrame(() => {
             const height = document.body.scrollHeight;
-            window.parent.postMessage({
-                type: 'sg-resize',
-                height: height
-            }, '*');
+            sendHeightToParent(height);
         });
 
         // Also set up a MutationObserver to catch dynamic content changes
@@ -195,10 +202,7 @@ class AppRoot extends HTMLElement {
             this._heightObserver = new MutationObserver(() => {
                 if (window.parent !== window) {
                     const height = document.body.scrollHeight;
-                    window.parent.postMessage({
-                        type: 'sg-resize',
-                        height: height
-                    }, '*');
+                    sendHeightToParent(height);
                 }
             });
             this._heightObserver.observe(document.body, {

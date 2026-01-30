@@ -465,6 +465,10 @@ export class AudioPlayer {
       await this.init();
     }
 
+    // Maximum allowed audio chunk size (5MB decoded, ~6.7MB base64)
+    const MAX_AUDIO_SIZE = 5 * 1024 * 1024;
+    const MAX_BASE64_SIZE = Math.ceil(MAX_AUDIO_SIZE * 1.4);
+
     try {
       // Resume audio context if suspended
       if (this.audioContext.state === "suspended") {
@@ -474,8 +478,18 @@ export class AudioPlayer {
       let bytes;
 
       if (base64Audio instanceof ArrayBuffer) {
+        // Validate size before processing
+        if (base64Audio.byteLength > MAX_AUDIO_SIZE) {
+          console.error("Audio chunk too large, rejecting:", base64Audio.byteLength);
+          return;
+        }
         bytes = new Uint8Array(base64Audio);
       } else if (typeof base64Audio === "string") {
+        // Validate base64 size before decoding to prevent memory exhaustion
+        if (base64Audio.length > MAX_BASE64_SIZE) {
+          console.error("Base64 audio data too large, rejecting:", base64Audio.length);
+          return;
+        }
         // Convert base64 to Float32Array
         const binaryString = atob(base64Audio);
         bytes = new Uint8Array(binaryString.length);

@@ -23,6 +23,26 @@ import {
 } from "../lib/gemini-live/geminilive.js";
 import { AudioStreamer, AudioPlayer } from "../lib/gemini-live/mediaUtils.js";
 
+// HTML escape function to prevent XSS
+function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Sanitize text for use in AI prompts to prevent prompt injection
+function sanitizeForPrompt(text) {
+  if (!text) return '';
+  // Remove characters that could break out of quoted strings or inject instructions
+  return text
+    .replace(/["'`]/g, '') // Remove quotes that could break string boundaries
+    .replace(/[\r\n]+/g, ' ') // Replace newlines with spaces
+    .replace(/[{}[\]]/g, '') // Remove brackets that could inject structured data
+    .trim()
+    .slice(0, 500); // Limit length to prevent extremely long injections
+}
+
 class ViewChat extends HTMLElement {
   constructor() {
     super();
@@ -36,10 +56,6 @@ class ViewChat extends HTMLElement {
 
   set language(value) {
     this._language = value;
-  }
-
-  set fromLanguage(value) {
-    this._fromLanguage = value;
   }
 
   set mode(value) {
@@ -78,12 +94,35 @@ class ViewChat extends HTMLElement {
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
         </button>
 
+        <!-- Transcript Toggle -->
+        <button id="transcript-toggle" style="
+            position: absolute;
+            top: var(--spacing-md);
+            right: var(--spacing-md);
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0.5;
+            transition: opacity 0.2s;
+            z-index: 10;
+        " onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=${localStorage.getItem('immergo_transcript') === 'true' ? '0.9' : '0.5'}" title="Toggle transcript">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
+        </button>
+
       <div class="container" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; position: relative; overflow: hidden; padding: var(--spacing-lg); gap: var(--spacing-md);">
 
         <div style="text-align: center;">
-          <p style="font-size: 0.85rem; color: var(--color-text-sub); margin: 0 0 4px 0; text-transform: uppercase; letter-spacing: 0.05em;">${this._mission.target_role || "Target Person"}</p>
-          <h2 style="font-size: 1.3rem; font-weight: bold; color: var(--braun-black); margin: 0;">${this._mission.title}</h2>
-          <p style="font-size: 0.9rem; color: var(--braun-dark); margin: 8px 0 0 0; max-width: 400px;">${this._mission.desc}</p>
+          <p style="font-size: 0.85rem; color: var(--color-text-sub); margin: 0 0 4px 0; text-transform: uppercase; letter-spacing: 0.05em;">${escapeHtml(this._mission.target_role) || "Target Person"}</p>
+          <h2 style="font-size: 1.3rem; font-weight: bold; color: var(--braun-black); margin: 0;">${escapeHtml(this._mission.title)}</h2>
+          <p style="font-size: 0.9rem; color: var(--braun-dark); margin: 8px 0 0 0; max-width: 400px;">${escapeHtml(this._mission.desc)}</p>
           ${this._mode === "immergo_teacher"
         ? `
           <div style="
@@ -109,15 +148,10 @@ class ViewChat extends HTMLElement {
              <audio-visualizer id="model-viz"></audio-visualizer>
           </div>
 
-          <!-- Transcript -->
-          ${this._mode === "immergo_teacher"
-        ? `
-            <div style="width: 100%; height: 120px; position: relative;">
-              <live-transcript></live-transcript>
-            </div>
-          `
-        : ""
-      }
+          <!-- Transcript (toggleable) -->
+          <div id="transcript-container" style="width: 100%; height: 140px; position: relative; display: ${localStorage.getItem('immergo_transcript') === 'true' ? 'block' : 'none'};">
+            <live-transcript></live-transcript>
+          </div>
 
           <!-- User Visualizer -->
           <div style="width: 100%; height: 60px;">
@@ -317,8 +351,10 @@ class ViewChat extends HTMLElement {
     const cancelPasswordBtn = this.querySelector("#cancel-password");
     const submitPasswordBtn = this.querySelector("#submit-password");
 
-    // Store session password and whether it's required
-    let sessionPassword = sessionStorage.getItem("sg_access_pw") || "";
+    // Password handling - keep password in memory only, not in storage
+    // Store only a success flag in sessionStorage (not the actual password)
+    let sessionPassword = ""; // Keep password in memory only during page session
+    let hasAuthenticatedThisSession = sessionStorage.getItem("sg_auth_success") === "true";
     let passwordRequired = false;
     let courseAuthEnabled = false;
 
@@ -393,8 +429,7 @@ class ViewChat extends HTMLElement {
         const handleSubmit = () => {
           const pw = passwordInput.value.trim();
           if (pw) {
-            sessionPassword = pw;
-            sessionStorage.setItem("sg_access_pw", pw);
+            sessionPassword = pw; // Keep in memory only, not in storage
             passwordDialog.classList.add("hidden");
             passwordDialog.style.display = "none";
             submitPasswordBtn.removeEventListener("click", handleSubmit);
@@ -428,7 +463,8 @@ class ViewChat extends HTMLElement {
     // Helper to show password error
     const showPasswordError = () => {
       sessionPassword = "";
-      sessionStorage.removeItem("sg_access_pw");
+      hasAuthenticatedThisSession = false;
+      sessionStorage.removeItem("sg_auth_success");
       passwordError.classList.remove("hidden");
       passwordDialog.classList.remove("hidden");
       passwordDialog.style.display = "flex";
@@ -515,6 +551,24 @@ class ViewChat extends HTMLElement {
           detail: { view: "mission-selector" },
         })
       );
+    });
+
+    // Transcript Toggle
+    const transcriptToggle = this.querySelector("#transcript-toggle");
+    const transcriptContainer = this.querySelector("#transcript-container");
+    const updateTranscriptToggleStyle = () => {
+      const isVisible = localStorage.getItem('immergo_transcript') === 'true';
+      transcriptToggle.style.opacity = isVisible ? '0.9' : '0.5';
+      transcriptToggle.style.background = isVisible ? 'rgba(0,0,0,0.05)' : 'transparent';
+    };
+    updateTranscriptToggleStyle();
+
+    transcriptToggle.addEventListener("click", () => {
+      const isCurrentlyVisible = localStorage.getItem('immergo_transcript') === 'true';
+      const newState = !isCurrentlyVisible;
+      localStorage.setItem('immergo_transcript', newState.toString());
+      transcriptContainer.style.display = newState ? 'block' : 'none';
+      updateTranscriptToggleStyle();
     });
 
     // Animate visualizer on click
@@ -676,15 +730,19 @@ class ViewChat extends HTMLElement {
         try {
           // 0. Configure System Instructions
           const language = this._language || "French";
-          const fromLanguage = this._fromLanguage || "English";
           const mode = this._mode || "immergo_immersive";
-          const missionTitle = this._mission
-            ? this._mission.title
-            : "General Conversation";
-          const missionDesc = this._mission ? this._mission.desc : "";
-          const targetRole = this._mission
-            ? this._mission.target_role || "a local native speaker"
-            : "a conversational partner";
+          // Sanitize mission data to prevent prompt injection attacks
+          const missionTitle = sanitizeForPrompt(
+            this._mission ? this._mission.title : "General Conversation"
+          );
+          const missionDesc = sanitizeForPrompt(
+            this._mission ? this._mission.desc : ""
+          );
+          const targetRole = sanitizeForPrompt(
+            this._mission
+              ? this._mission.target_role || "a local native speaker"
+              : "a conversational partner"
+          );
 
           let systemInstruction = "";
 
@@ -702,15 +760,15 @@ Adjust your vocabulary, grammar complexity, and speaking pace to match this leve
 
 ROLEPLAY INSTRUCTION:
 You are acting as **${targetRole}**, a native German speaker.
-The user is a language learner (native speaker of ${fromLanguage}) trying to: "${missionTitle}" (${missionDesc}).
+The user is a language learner (native speaker of English) trying to: "${missionTitle}" (${missionDesc}).
 Your goal is to be a PROACTIVE LANGUAGE MENTOR while staying in character as ${targetRole}.
 
 TEACHING PROTOCOL:
-1. **Gentle Corrections**: If the user makes a clear mistake, respond in character first, then briefly provide a friendly correction or a "more natural way to say that" in ${fromLanguage}.
-2. **Vocabulary Boost**: Every few turns, suggest 1-2 relevant German words or idioms that fit the current situation and explain their meaning in ${fromLanguage}.
-3. **Mini-Checks**: Occasionally (every 3-4 turns), ask the user a quick "How would you say...?" question in ${fromLanguage} related to the mission to test their recall.
+1. **Gentle Corrections**: If the user makes a clear mistake, respond in character first, then briefly provide a friendly correction or a "more natural way to say that" in English.
+2. **Vocabulary Boost**: Every few turns, suggest 1-2 relevant German words or idioms that fit the current situation and explain their meaning in English.
+3. **Mini-Checks**: Occasionally (every 3-4 turns), ask the user a quick "How would you say...?" question in English related to the mission to test their recall.
 4. **Scaffolding**: If the user is hesitant, provide the start of a sentence in German or give them two options to choose from to keep the momentum.
-5. **Mixed-Language Support**: Use ${fromLanguage} for teaching moments, but always pivot back to German to maintain the immersive feel.
+5. **Mixed-Language Support**: Use English for teaching moments, but always pivot back to German to maintain the immersive feel.
 
 REPETITION PRACTICE (use occasionally, not every time):
 When you teach a new phrase or the user struggles with pronunciation:
@@ -733,11 +791,11 @@ Only call "complete_mission" when:
 CRITICAL: NEVER interrupt the user. Wait until the user has completely finished speaking and there is a clear pause before calling complete_mission. If the user is mid-sentence or still talking, do NOT end the conversation.
 
 When ending:
-1. Give a warm congratulatory message in ${language}, then translate the praise into ${fromLanguage}.
+1. Give a warm congratulatory message in ${language}, then translate the praise into English.
 2. Wait for the user to respond or for clear silence.
 3. THEN call the "complete_mission" tool.
 3. Set 'score' to 0 (Zero) as this is a learning-focused practice session.
-4. Provide 3 specific takeaways (grammar tips or new words) in the feedback list in ${fromLanguage}.
+4. Provide 3 specific takeaways (grammar tips or new words) in the feedback list in English.
 `;
           } else {
             // Immersive Mode Prompt (Default)
@@ -751,7 +809,7 @@ Adjust your vocabulary, grammar complexity, and speaking pace to match this leve
 
 ROLEPLAY INSTRUCTION:
 You are acting as **${targetRole}**, a native German speaker.
-The user is a language learner (native speaker of ${fromLanguage}) trying to: "${missionTitle}" (${missionDesc}).
+The user is a language learner (native speaker of English) trying to: "${missionTitle}" (${missionDesc}).
 Your goal is to play your role (${targetRole}) naturally. Do not act as an AI assistant. Act as the person.
 Speak in German with accent and tone appropriate for the role.
 
@@ -760,12 +818,12 @@ INTERACTION GUIDELINES:
 2. Utilising the proactive audio feature, do not respond until it is necessary (i.e. the user has finished their turn).
 3. Be helpful but strict about language practice. It is just like speaking to a multilingual person.
 4. You cannot proceed without the user speaking German themselves.
-5. If you need to give feedback, corrections, or translations, use the user's native language (${fromLanguage}).
+5. If you need to give feedback, corrections, or translations, use the user's native language (English).
 
 NO FREE RIDES POLICY:
-If the user asks for help in ${fromLanguage} (e.g., "please can you repeat"), you MUST NOT simply answer.
+If the user asks for help in English (e.g., "please can you repeat"), you MUST NOT simply answer.
 Instead, force them to say the phrase in German.
-For example, say: "You mean to say [German phrase]" (provided in ${fromLanguage}) and wait for them to repeat it.
+For example, say: "You mean to say [German phrase]" (provided in English) and wait for them to repeat it.
 Do not continue the conversation until they attempt the phrase in German.
 
 REPETITION PRACTICE (use occasionally, not every time):
@@ -789,7 +847,7 @@ When ending:
 2. Wait for the user to respond or for clear silence.
 3. THEN call the "complete_mission" tool.
 3. Assign a score based on strict criteria: 1 for struggling/English reliance (Tiro), 2 for capable but imperfect (Proficiens), 3 for native-level fluency (Peritus).
-4. Provide 3 specific pointers or compliments in the feedback list (in the user's native language: ${fromLanguage}).
+4. Provide 3 specific pointers or compliments in the feedback list (in the user's native language: English).
 `;
           }
 
@@ -801,13 +859,15 @@ When ending:
           );
           this.client.setSystemInstructions(systemInstruction);
 
-          // Configure Transcription based on Mode
-          if (mode === "immergo_teacher") {
-            this.client.setInputAudioTranscription(true);
-            this.client.setOutputAudioTranscription(true);
-          } else {
-            this.client.setInputAudioTranscription(false);
-            this.client.setOutputAudioTranscription(false);
+          // Configure Transcription based on user preference
+          const transcriptEnabled = localStorage.getItem('immergo_transcript') === 'true';
+          this.client.setInputAudioTranscription(transcriptEnabled);
+          this.client.setOutputAudioTranscription(transcriptEnabled);
+
+          // Clear previous transcript when starting new session
+          const transcriptEl = this.querySelector("live-transcript");
+          if (transcriptEl && transcriptEl.clear) {
+            transcriptEl.clear();
           }
 
           // 1. Connect to WebSocket
@@ -815,7 +875,8 @@ When ending:
 
           // Check if password is required and get it
           // Skip password for users with course auth (signed URL or JWT)
-          if (passwordRequired && !hasCourseAuth && !sessionPassword) {
+          // Also skip if already authenticated this session (but still no password in memory)
+          if (passwordRequired && !hasCourseAuth && !sessionPassword && !hasAuthenticatedThisSession) {
             try {
               await requestPassword();
             } catch (err) {
@@ -847,26 +908,8 @@ When ending:
             }
           }
 
-          // Execute Recaptcha
-          let token = "";
-          try {
-            token = await this.getRecaptchaToken();
-            console.log("Captcha solved:", token);
-          } catch (err) {
-            console.error("Recaptcha failed:", err);
-            // Start without token? Or fail? The server will reject it.
-            // Let's proceed and let server reject if needed, or stop.
-            // For now, let's stop to be safe.
-            isSpeaking = false;
-            micBtn.classList.remove('active');
-            micBtn.innerHTML = `<span style="font-size: 1rem; font-weight: 800; letter-spacing: 0.02em;">Start Conversation</span>`;
-            userViz.disconnect();
-            modelViz.disconnect();
-            statusEl.textContent = "";
-            return;
-          }
-
           // Pass auth credentials based on what's available
+          // Note: reCAPTCHA removed - all users authenticate via JWT (bypasses reCAPTCHA)
           const authOptions = {
             password: passwordRequired ? sessionPassword : null,
             jwtToken: hasCourseAuth ? jwtToken : null,
@@ -879,7 +922,13 @@ When ending:
               timestamp: localStorage.getItem("sg_gdpr_consent_date") || new Date().toISOString()
             } : null
           };
-          await this.client.connect(token, authOptions);
+          await this.client.connect(null, authOptions);
+
+          // Mark auth success (without storing password)
+          if (passwordRequired && sessionPassword) {
+            hasAuthenticatedThisSession = true;
+            sessionStorage.setItem("sg_auth_success", "true");
+          }
 
           // 2. Start Audio Stream
           console.log("[App] Starting audio stream...");
@@ -935,8 +984,10 @@ When ending:
             rateLimitDialog.classList.remove("hidden");
             rateLimitDialog.style.display = "flex";
           } else if (err.status === 403) {
-            // Wrong password
-            showPasswordError();
+            // Session expired or invalid credentials - redirect to login
+            sessionStorage.removeItem("sg_auth_success");
+            const errorMsg = encodeURIComponent("Your session has expired. Please log in again.");
+            window.location.href = `/?error=session_expired&message=${errorMsg}`;
           } else {
             alert("Failed to start session: " + err.message);
           }
@@ -945,53 +996,6 @@ When ending:
     });
   }
 
-  async getRecaptchaToken() {
-    return new Promise(async (resolve) => {
-      // Graceful fallback for Simple Mode
-      if (typeof grecaptcha === "undefined") {
-        console.warn("ReCAPTCHA not loaded (Simple Mode). Proceeding without token.");
-        resolve(null);
-        return;
-      }
-
-      // Get the site key from app config
-      let siteKey = null;
-      const appRoot = document.querySelector('app-root');
-      if (appRoot && appRoot.appConfig && appRoot.appConfig.recaptcha_site_key) {
-        siteKey = appRoot.appConfig.recaptcha_site_key;
-      } else {
-        // Fallback: fetch from API
-        try {
-          const res = await fetch('/api/status');
-          const data = await res.json();
-          siteKey = data.recaptcha_site_key;
-        } catch (e) {
-          console.warn("Failed to fetch ReCAPTCHA config:", e);
-        }
-      }
-
-      if (!siteKey) {
-        console.warn("ReCAPTCHA site key not configured (Simple Mode). Proceeding without token.");
-        resolve(null);
-        return;
-      }
-
-      try {
-        grecaptcha.enterprise.ready(async () => {
-          try {
-            const t = await grecaptcha.enterprise.execute(siteKey, { action: "LOGIN" });
-            resolve(t);
-          } catch (e) {
-            console.warn("ReCAPTCHA execution failed (Simple Mode fallback):", e);
-            resolve(null);
-          }
-        });
-      } catch (e) {
-        console.warn("ReCAPTCHA ready failed:", e);
-        resolve(null);
-      }
-    });
-  }
 }
 
 customElements.define("view-chat", ViewChat);

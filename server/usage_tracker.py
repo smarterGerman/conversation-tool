@@ -26,19 +26,21 @@ from typing import Dict, Optional
 from datetime import datetime, timezone
 from collections import defaultdict
 
+from server.redis_storage import get_storage
+
 logger = logging.getLogger(__name__)
 
 # Daily limit in seconds (default 1 hour = 3600 seconds)
 DAILY_USER_LIMIT = int(os.getenv("DAILY_USER_LIMIT", "3600"))
 
-# In-memory storage for usage tracking
-# In production, consider using Redis for multi-instance support
-# Format: {user_id: {date: total_seconds_used}}
-_user_usage: Dict[str, Dict[str, float]] = defaultdict(lambda: defaultdict(float))
+# Redis key prefixes
+USAGE_PREFIX = "usage:"  # usage:{user_id}:{date} -> total_seconds
+SESSION_PREFIX = "session:"  # session:{session_id} -> {user_id, start_time}
 
-# Active sessions tracking
-# Format: {session_id: {user_id, start_time}}
-_active_sessions: Dict[str, Dict] = {}
+# TTL for usage keys (25 hours to cover timezone edges)
+USAGE_TTL = 25 * 60 * 60
+# TTL for session keys (2 hours max session)
+SESSION_TTL = 2 * 60 * 60
 
 
 def _get_today() -> str:
@@ -46,26 +48,23 @@ def _get_today() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
 
-def _cleanup_old_data():
-    """Remove usage data older than 7 days to prevent memory growth"""
-    today = datetime.now(timezone.utc)
-    for user_id in list(_user_usage.keys()):
-        for date_str in list(_user_usage[user_id].keys()):
-            try:
-                date = datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
-                if (today - date).days > 7:
-                    del _user_usage[user_id][date_str]
-            except ValueError:
-                pass
-        # Remove user if no usage data left
-        if not _user_usage[user_id]:
-            del _user_usage[user_id]
+def _get_usage_key(user_id: str, date: str = None) -> str:
+    """Get Redis key for user usage"""
+    if date is None:
+        date = _get_today()
+    return f"{USAGE_PREFIX}{user_id}:{date}"
+
+
+def _get_session_key(session_id: str) -> str:
+    """Get Redis key for active session"""
+    return f"{SESSION_PREFIX}{session_id}"
 
 
 def get_user_usage_today(user_id: str) -> float:
     """Get total seconds used by user today"""
-    today = _get_today()
-    return _user_usage[user_id][today]
+    storage = get_storage()
+    key = _get_usage_key(user_id)
+    return storage.get_float(key)
 
 
 def get_user_remaining_today(user_id: str) -> float:
@@ -97,36 +96,40 @@ def can_user_start_session(user_id: str) -> tuple[bool, str]:
 
 
 def start_session(session_id: str, user_id: str) -> None:
-    """Record the start of a session"""
-    _cleanup_old_data()
-
-    _active_sessions[session_id] = {
+    """Record the start of a session (Redis-backed)"""
+    storage = get_storage()
+    session_data = {
         "user_id": user_id,
         "start_time": time.time()
     }
+    storage.set_json(_get_session_key(session_id), session_data, ttl=SESSION_TTL)
     logger.info(f"Session started for user {user_id[:20]}... (session: {session_id[:8]})")
 
 
 def end_session(session_id: str) -> Optional[float]:
     """
-    Record the end of a session and return duration.
+    Record the end of a session and return duration (Redis-backed).
 
     Returns:
         Duration in seconds, or None if session not found
     """
-    session = _active_sessions.pop(session_id, None)
+    storage = get_storage()
+    session_key = _get_session_key(session_id)
+
+    # Get and delete session atomically
+    session = storage.get_json(session_key)
     if not session:
         return None
+    storage.delete(session_key)
 
     user_id = session["user_id"]
     start_time = session["start_time"]
     duration = time.time() - start_time
 
-    # Record usage
-    today = _get_today()
-    _user_usage[user_id][today] += duration
+    # Record usage atomically
+    usage_key = _get_usage_key(user_id)
+    total_today = storage.incrby(usage_key, duration, ttl=USAGE_TTL)
 
-    total_today = _user_usage[user_id][today]
     logger.info(
         f"Session ended for user {user_id[:20]}... "
         f"Duration: {duration:.0f}s, Total today: {total_today:.0f}s"
