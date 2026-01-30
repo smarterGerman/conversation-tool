@@ -56,8 +56,14 @@ class GeminiLive:
         logger.debug("Setup config received: %s", json.dumps(setup_config, indent=2) if setup_config else "None")
 
         config_args = {
-            "response_modalities": [types.Modality.AUDIO]
+            "response_modalities": [types.Modality.AUDIO],
+            # Enable context window compression for longer sessions
+            "context_window_compression": types.ContextWindowCompressionConfig(
+                trigger_tokens=10000,
+                sliding_window=types.SlidingWindow(target_tokens=1024)
+            )
         }
+        logger.info("Context window compression enabled: trigger=10000, target=1024")
         
         if setup_config:
             # Parse configuration from frontend
@@ -165,9 +171,14 @@ class GeminiLive:
             event_queue = asyncio.Queue()
 
             async def receive_loop():
+                message_count = 0
                 try:
+                    logger.info("Starting receive loop...")
                     while True:
                         async for response in session.receive():
+                            message_count += 1
+                            if message_count % 50 == 0:
+                                logger.debug(f"Received {message_count} messages from Gemini")
                             server_content = response.server_content
                             tool_call = response.tool_call
                             
@@ -267,8 +278,10 @@ class GeminiLive:
                                     await session.send_tool_response(function_responses=function_responses)
 
                 except Exception as e:
+                    logger.error(f"Receive loop error after {message_count} messages: {type(e).__name__}: {e}")
                     await event_queue.put({"type": "error", "error": str(e)})
                 finally:
+                    logger.info(f"Receive loop ended after {message_count} total messages")
                     await event_queue.put(None)
 
             send_audio_task = asyncio.create_task(send_audio())

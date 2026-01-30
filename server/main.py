@@ -521,14 +521,23 @@ async def websocket_endpoint(websocket: WebSocket, token: Optional[str] = None):
     if user_id:
         remaining = usage_tracker.get_remaining(user_id)
         effective_timeout = min(SESSION_TIME_LIMIT, int(remaining))
+        logger.info(f"Session timeout: {effective_timeout}s (limit={SESSION_TIME_LIMIT}s, remaining={remaining:.0f}s)")
+    else:
+        logger.info(f"Session timeout: {effective_timeout}s (anonymous user)")
 
+    import time
+    session_start = time.time()
     try:
         await asyncio.wait_for(run_session(), timeout=effective_timeout)
+        elapsed = time.time() - session_start
+        logger.info(f"Session completed normally after {elapsed:.0f}s")
     except asyncio.TimeoutError:
-        logger.info("Session time limit reached")
+        elapsed = time.time() - session_start
+        logger.info(f"Session timeout after {elapsed:.0f}s (limit was {effective_timeout}s)")
         await websocket.close(code=1000, reason="Session time limit reached")
     except Exception as e:
-        logger.error(f"Error in Gemini session: {e}")
+        elapsed = time.time() - session_start
+        logger.error(f"Session error after {elapsed:.0f}s: {type(e).__name__}: {e}")
     finally:
         receive_task.cancel()
         # End usage tracking
