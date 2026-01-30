@@ -36,6 +36,7 @@ DAILY_USER_LIMIT = int(os.getenv("DAILY_USER_LIMIT", "3600"))
 # Redis key prefixes
 USAGE_PREFIX = "usage:"  # usage:{user_id}:{date} -> total_seconds
 SESSION_PREFIX = "session:"  # session:{session_id} -> {user_id, start_time}
+LIMIT_PREFIX = "limit:"  # limit:{user_id} -> custom_limit_seconds (no TTL)
 
 # TTL for usage keys (25 hours to cover timezone edges)
 USAGE_TTL = 25 * 60 * 60
@@ -60,6 +61,27 @@ def _get_session_key(session_id: str) -> str:
     return f"{SESSION_PREFIX}{session_id}"
 
 
+def _get_limit_key(user_id: str) -> str:
+    """Get Redis key for custom user limit"""
+    return f"{LIMIT_PREFIX}{user_id}"
+
+
+def get_user_limit(user_id: str) -> int:
+    """Get daily limit for user (custom or default)"""
+    storage = get_storage()
+    custom_limit = storage.get_float(_get_limit_key(user_id))
+    if custom_limit > 0:
+        return int(custom_limit)
+    return DAILY_USER_LIMIT
+
+
+def set_user_limit(user_id: str, limit_seconds: int) -> None:
+    """Set a custom daily limit for a user (persists indefinitely)"""
+    storage = get_storage()
+    storage.set_float(_get_limit_key(user_id), float(limit_seconds))
+    logger.info(f"Set custom limit for {user_id}: {limit_seconds}s ({limit_seconds // 60} minutes)")
+
+
 def get_user_usage_today(user_id: str) -> float:
     """Get total seconds used by user today"""
     storage = get_storage()
@@ -70,7 +92,8 @@ def get_user_usage_today(user_id: str) -> float:
 def get_user_remaining_today(user_id: str) -> float:
     """Get remaining seconds available for user today"""
     used = get_user_usage_today(user_id)
-    remaining = max(0, DAILY_USER_LIMIT - used)
+    limit = get_user_limit(user_id)
+    remaining = max(0, limit - used)
     return remaining
 
 
@@ -87,7 +110,8 @@ def can_user_start_session(user_id: str) -> tuple[bool, str]:
     remaining = get_user_remaining_today(user_id)
 
     if remaining <= 0:
-        return False, f"Daily limit of {DAILY_USER_LIMIT // 60} minutes reached. Try again tomorrow."
+        limit = get_user_limit(user_id)
+        return False, f"Daily limit of {limit // 60} minutes reached. Try again tomorrow."
 
     if remaining < 60:  # Less than 1 minute remaining
         return False, f"Only {int(remaining)} seconds remaining today. Try again tomorrow."
