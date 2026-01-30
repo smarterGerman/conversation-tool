@@ -798,11 +798,16 @@ INTERACTION GUIDELINES:
 2. Utilize the proactive audio feature: do not respond until the user has clearly finished their thought.
 
 MISSION COMPLETION:
-IMPORTANT: Do NOT end the conversation prematurely. Keep the practice going for at least 8-10 exchanges.
+IMPORTANT: Do NOT end the conversation prematurely. Sessions should last at least 3-5 MINUTES of actual speaking time.
 Even after the basic mission objective is achieved, continue with follow-up questions, vocabulary practice, or related scenarios.
+Keep expanding the conversation - ask about related topics, introduce complications, or practice variations of the same scenario.
+
 Only call "complete_mission" when:
-- The user explicitly says goodbye or indicates they want to end
-- OR the conversation has naturally concluded after substantial practice (minimum 8-10 back-and-forth turns)
+- The user explicitly says goodbye or clearly indicates they want to end
+- OR the conversation has been going for several minutes with substantial practice AND has reached a natural conclusion
+
+NEVER complete the mission just because the user accomplished the basic task. A coffee order taking 30 seconds is NOT enough practice.
+If the user orders coffee successfully, ask follow-up questions: "Möchten Sie auch etwas zu essen?", discuss payment, ask about their day, etc.
 
 CRITICAL: NEVER interrupt the user. Wait until the user has completely finished speaking and there is a clear pause before calling complete_mission. If the user is mid-sentence or still talking, do NOT end the conversation.
 
@@ -855,11 +860,16 @@ When you give the user a phrase to say and it's important or challenging:
 - Use your judgment - don't ask for repetition every single time, only when it would genuinely help
 
 MISSION COMPLETION:
-IMPORTANT: Do NOT end the conversation prematurely. Keep the roleplay going for at least 8-10 exchanges.
+IMPORTANT: Do NOT end the conversation prematurely. Sessions should last at least 3-5 MINUTES of actual speaking time.
 Even after the basic mission objective is achieved, continue the natural conversation - ask follow-up questions, explore related topics, or introduce new situational challenges.
+Keep expanding the roleplay - add complications, ask personal questions, or explore tangential topics that would naturally come up.
+
 Only call "complete_mission" when:
-- The user explicitly says goodbye or indicates they want to end
-- OR the conversation has naturally concluded after a substantial exchange (minimum 8-10 back-and-forth turns)
+- The user explicitly says goodbye or clearly indicates they want to end
+- OR the conversation has been going for several minutes with substantial practice AND has reached a natural conclusion
+
+NEVER complete the mission just because the user accomplished the basic task. A coffee order taking 30 seconds is NOT enough practice.
+If the user orders coffee successfully, ask follow-up questions: "Möchten Sie auch etwas zu essen?", discuss payment, ask about their day, etc.
 
 CRITICAL: NEVER interrupt the user. Wait until the user has completely finished speaking and there is a clear pause before calling complete_mission. If the user is mid-sentence or still talking, do NOT end the conversation.
 
