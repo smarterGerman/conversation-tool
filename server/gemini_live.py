@@ -132,14 +132,15 @@ class GeminiLive(AILiveProvider):
             logger.debug("Input audio transcription enabled")
             config_args["input_audio_transcription"] = types.AudioTranscriptionConfig()
 
-        # Context window compression - allows sessions to run longer by dropping old context
-        # Audio: ~25 tokens/sec, so 10 min = ~15,000 tokens
-        # Trigger compression at 25,000 tokens, keep most recent 15,000 tokens (~10 min)
-        config_args["context_window_compression"] = types.ContextWindowCompressionConfig(
-            trigger_tokens=25000,
-            sliding_window=types.SlidingWindow(target_tokens=15000)
-        )
-        logger.info("Context window compression enabled: trigger=25000, target=15000 tokens")
+        # Context window compression - DISABLED for now
+        # Testing showed native audio models may stop more frequently with compression enabled
+        # See: https://github.com/google-gemini/live-api-web-console/issues/117
+        # Uncomment to re-enable:
+        # config_args["context_window_compression"] = types.ContextWindowCompressionConfig(
+        #     trigger_tokens=25000,
+        #     sliding_window=types.SlidingWindow(target_tokens=15000)
+        # )
+        # logger.info("Context window compression enabled: trigger=25000, target=15000 tokens")
 
         config = types.LiveConnectConfig(**config_args)
         
