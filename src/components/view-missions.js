@@ -349,7 +349,6 @@ class ViewMissions extends HTMLElement {
             view: 'chat',
             mission: { ...scenario, level: level },
             language: 'German',
-            fromLanguage: 'English',
             mode: selectedMode
           }
         }));

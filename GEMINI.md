@@ -125,6 +125,42 @@ Files:
 - `PRIVACY.md`: Privacy policy with both providers
 - `TERMS.md`: Terms of service
 
+## Code Review
+
+For comprehensive security, architecture, and code quality reviews, use the prompt in `REVIEW_PROMPT.md`. This covers:
+
+- **Security audit**: Auth, input validation, secrets, CORS, rate limiting, GDPR
+- **Architecture review**: Provider abstraction, WebSocket lifecycle, audio pipeline
+- **Code quality**: Error handling, performance, maintainability
+- **Operational concerns**: Deployment, monitoring, scalability
+
+### Running a Review
+
+```bash
+# With Claude Code CLI
+cat REVIEW_PROMPT.md | claude
+
+# Or copy the prompt content to any AI assistant capable of code review
+```
+
+### GDPR Data Utilities
+
+Handle data subject requests (Article 15, 17, 20):
+
+```bash
+# Export user data (Article 15 & 20)
+python -m server.gdpr_utils export user@example.com
+
+# Dry run deletion (preview what would be deleted)
+python -m server.gdpr_utils delete user@example.com
+
+# Actually delete/anonymize (Article 17)
+python -m server.gdpr_utils delete user@example.com --confirm
+
+# Get full deletion instructions
+python -m server.gdpr_utils instructions user@example.com
+```
+
 ## Common Tasks for Agents
 - **Adding a Mission**: Update `src/data/missions.json` with a new scenario definition.
 - **UI Tweaks**: Modify components in `src/components/` and check `src/style.css` for theme variables.

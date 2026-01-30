@@ -18,6 +18,7 @@ class LiveTranscript extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
+    this.transcriptHistory = []; // Store conversation for export
     this.render();
   }
 
@@ -43,6 +44,51 @@ class LiveTranscript extends HTMLElement {
     });
   }
 
+  clear() {
+    const container = this.shadowRoot.querySelector('.transcript-container');
+    if (container) {
+      container.innerHTML = '';
+    }
+    this.transcriptHistory = [];
+    this.updateCopyButton();
+  }
+
+  getTranscriptText() {
+    // Build transcript from history for accurate ordering
+    let lines = [];
+    for (const entry of this.transcriptHistory) {
+      const speaker = entry.role === 'user' ? 'You' : 'AI';
+      lines.push(`${speaker}: ${entry.text}`);
+    }
+    return lines.join('\n\n');
+  }
+
+  async copyTranscript() {
+    const text = this.getTranscriptText();
+    if (!text) return;
+
+    try {
+      await navigator.clipboard.writeText(text);
+      const copyBtn = this.shadowRoot.querySelector('.copy-btn');
+      if (copyBtn) {
+        const originalText = copyBtn.textContent;
+        copyBtn.textContent = 'Copied!';
+        setTimeout(() => {
+          copyBtn.textContent = originalText;
+        }, 2000);
+      }
+    } catch (err) {
+      console.error('Failed to copy transcript:', err);
+    }
+  }
+
+  updateCopyButton() {
+    const copyBtn = this.shadowRoot.querySelector('.copy-btn');
+    if (copyBtn) {
+      copyBtn.style.display = this.transcriptHistory.length > 0 ? 'flex' : 'none';
+    }
+  }
+
   updateTranscript(role, text, isFinal) {
     const container = this.shadowRoot.querySelector('.transcript-container');
     if (!container) return;
@@ -60,11 +106,14 @@ class LiveTranscript extends HTMLElement {
     let bubble = container.querySelector(`.bubble.temp[data-role="${role}"]`);
 
     if (!bubble) {
-      // Create new bubble
+      // Create new bubble - also start a new history entry
       bubble = document.createElement('div');
       bubble.className = `bubble temp ${role}`;
       bubble.dataset.role = role;
       container.appendChild(bubble);
+
+      // Start new history entry
+      this.transcriptHistory.push({ role, text: '' });
 
       // Auto scroll
       container.scrollTop = container.scrollHeight;
@@ -77,6 +126,11 @@ class LiveTranscript extends HTMLElement {
       // Check if starts with alphanumeric (approximate check for "word")
       if (/^[a-zA-Z0-9À-ÿ]/.test(text)) {
         bubble.appendChild(document.createTextNode(' '));
+        // Also add space to history
+        const lastEntry = this.transcriptHistory[this.transcriptHistory.length - 1];
+        if (lastEntry && lastEntry.role === role) {
+          lastEntry.text += ' ';
+        }
       }
     }
 
@@ -85,6 +139,15 @@ class LiveTranscript extends HTMLElement {
     span.textContent = text;
     span.className = 'fade-span';
     bubble.appendChild(span);
+
+    // Append to history
+    const lastEntry = this.transcriptHistory[this.transcriptHistory.length - 1];
+    if (lastEntry && lastEntry.role === role) {
+      lastEntry.text += text;
+    }
+
+    // Update copy button visibility
+    this.updateCopyButton();
 
     // Note: We ignore isFinal here because the backend might be sending it prematurely for chunks.
     // We rely on role-switching or explicit finalizeAll() calls to close bubbles.
@@ -104,27 +167,64 @@ class LiveTranscript extends HTMLElement {
           height: 100%;
           overflow: hidden;
           font-family: var(--font-body, system-ui, sans-serif);
+          position: relative;
+        }
+
+        .transcript-wrapper {
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .transcript-header {
+          display: flex;
+          justify-content: flex-end;
+          padding: 0.25rem 0.5rem;
+          flex-shrink: 0;
+        }
+
+        .copy-btn {
+          display: none;
+          align-items: center;
+          gap: 4px;
+          background: rgba(0,0,0,0.05);
+          border: none;
+          border-radius: 4px;
+          padding: 4px 8px;
+          font-size: 0.7rem;
+          font-weight: 600;
+          color: var(--color-text-sub, #666);
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+
+        .copy-btn:hover {
+          background: rgba(0,0,0,0.1);
+        }
+
+        .copy-btn svg {
+          width: 12px;
+          height: 12px;
         }
 
         .transcript-container {
-          height: 100%;
+          flex: 1;
           overflow-y: auto;
-          padding: 1rem;
-          /* padding-bottom removed in favor of spacer */
+          padding: 0 1rem 1rem 1rem;
           display: flex;
           flex-direction: column;
           gap: 0.5rem;
           scroll-behavior: smooth;
           /* Seamless fade effect - fixed size fade */
-          mask-image: linear-gradient(to bottom, transparent 0px, black 60px, black calc(100% - 60px), transparent 100%);
-          -webkit-mask-image: linear-gradient(to bottom, transparent 0px, black 60px, black calc(100% - 60px), transparent 100%);
+          mask-image: linear-gradient(to bottom, transparent 0px, black 30px, black calc(100% - 60px), transparent 100%);
+          -webkit-mask-image: linear-gradient(to bottom, transparent 0px, black 30px, black calc(100% - 60px), transparent 100%);
         }
 
         /* Robust spacer to ensure scrolling clears the bottom fade */
         .transcript-container::after {
           content: "";
           display: block;
-          min-height: 120px; 
+          min-height: 120px;
           flex-shrink: 0;
         }
 
@@ -134,7 +234,7 @@ class LiveTranscript extends HTMLElement {
           padding: 0.5rem 1rem;
           font-size: 1.1rem;
           line-height: 1.5;
-          animation: popIn 0.5s ease forwards; 
+          animation: popIn 0.5s ease forwards;
           word-wrap: break-word;
           /* opacity handled by animation */
         }
@@ -177,10 +277,27 @@ class LiveTranscript extends HTMLElement {
           background: transparent;
         }
       </style>
-      <div class="transcript-container">
-        <!-- Transcripts go here -->
+      <div class="transcript-wrapper">
+        <div class="transcript-header">
+          <button class="copy-btn" title="Copy transcript">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            Copy
+          </button>
+        </div>
+        <div class="transcript-container">
+          <!-- Transcripts go here -->
+        </div>
       </div>
     `;
+
+    // Attach copy button handler
+    const copyBtn = this.shadowRoot.querySelector('.copy-btn');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', () => this.copyTranscript());
+    }
   }
 }
 
