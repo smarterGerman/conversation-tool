@@ -66,7 +66,7 @@ ACCESS_PASSWORD = os.getenv("ACCESS_PASSWORD", "")
 RECAPTCHA_SITE_KEY = os.getenv("RECAPTCHA_SITE_KEY")
 REDIS_URL = os.getenv("REDIS_URL")
 GLOBAL_RATE_LIMIT = os.getenv("GLOBAL_RATE_LIMIT", "1000 per hour")
-PER_USER_RATE_LIMIT = os.getenv("PER_USER_RATE_LIMIT", "2 per minute")
+PER_USER_RATE_LIMIT = os.getenv("PER_USER_RATE_LIMIT", "10 per minute")
 DEV_MODE = os.getenv("DEV_MODE", "false") == "true"
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", "")  # Comma-separated list of allowed origins
 MAX_MESSAGE_SIZE = int(os.getenv("MAX_MESSAGE_SIZE", "1048576"))  # 1MB default
