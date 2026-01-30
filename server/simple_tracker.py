@@ -95,3 +95,74 @@ class SimpleTracker:
 
 # Create the decorator instance
 simpletrack = SimpleTracker()
+
+
+def log_gdpr_consent(
+    user_id: str,
+    provider: str,
+    jurisdiction: str,
+    ip_address: str,
+    user_agent: str = ""
+) -> bool:
+    """
+    Log GDPR consent for international data transfer.
+
+    This creates an audit trail for GDPR Article 49(1)(a) explicit consent.
+    Records must be retained for minimum 3 years.
+
+    Args:
+        user_id: User identifier (email or anonymous ID)
+        provider: AI provider name (e.g., "Alibaba Qwen")
+        jurisdiction: Data processing jurisdiction (e.g., "China")
+        ip_address: User's IP address for jurisdiction inference
+        user_agent: Browser user agent string
+
+    Returns:
+        True if logged successfully, False otherwise
+    """
+    if DEV_MODE:
+        logger.info(
+            "DEV_MODE: GDPR consent logged locally - user=%s, provider=%s, jurisdiction=%s",
+            user_id[:20] if user_id else "anonymous", provider, jurisdiction
+        )
+        return True
+
+    tracker = SimpleTracker()
+    client = tracker._get_client()
+
+    if not client:
+        logger.error("BigQuery not available - GDPR consent NOT logged for user %s", user_id[:20] if user_id else "anonymous")
+        return False
+
+    consent_data = {
+        "consent_type": "gdpr_international_transfer",
+        "user_id": user_id,
+        "provider": provider,
+        "jurisdiction": jurisdiction,
+        "ip_address": ip_address,
+        "user_agent": user_agent,
+        "legal_basis": "explicit_consent_art49_1a",
+        "consent_text": f"User explicitly consented to data transfer to {jurisdiction} for processing by {provider}",
+        "retention_years": 3
+    }
+
+    rows = [{
+        "timestamp": datetime.datetime.utcnow().isoformat(),
+        "demo_name": tracker.demo_name,
+        "event_type": "gdpr_consent",
+        "metadata": json.dumps(consent_data)
+    }]
+
+    try:
+        errors = client.insert_rows_json(tracker.table_ref, rows)
+        if errors:
+            logger.error("BigQuery insert errors for GDPR consent: %s", errors)
+            return False
+        logger.info(
+            "GDPR consent logged: user=%s, provider=%s, jurisdiction=%s",
+            user_id[:20] if user_id else "anonymous", provider, jurisdiction
+        )
+        return True
+    except Exception as e:
+        logger.error("BigQuery error logging GDPR consent: %s", e)
+        return False

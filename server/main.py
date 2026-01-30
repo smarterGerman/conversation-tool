@@ -32,7 +32,7 @@ from server.recaptcha_validator import RecaptchaValidator
 from server.gemini_live import GeminiLive
 from server.ai_provider import AILiveProvider, get_provider_info
 from server.fingerprint import generate_fingerprint
-from server.simple_tracker import simpletrack
+from server.simple_tracker import simpletrack, log_gdpr_consent
 from server.config_utils import get_project_id
 from server.course_auth import course_auth
 from server.teachable_auth import teachable_auth
@@ -385,6 +385,7 @@ async def authenticate(request: Request):
         password = data.get("password")
         jwt_token = data.get("jwt_token")
         signed_params = data.get("signed_params")  # {user, exp, sig, course}
+        gdpr_consent = data.get("gdpr_consent")  # {provider, jurisdiction, consented}
 
         course_user = None
 
@@ -456,6 +457,18 @@ async def authenticate(request: Request):
 
         # Calculate effective session limit (minimum of configured limit and remaining quota)
         effective_session_limit = min(SESSION_TIME_LIMIT, int(remaining_seconds))
+
+        # Log GDPR consent if provided (for non-EU providers like Qwen)
+        if gdpr_consent and gdpr_consent.get("consented"):
+            client_ip = request.headers.get("X-Forwarded-For", request.client.host if request.client else "unknown")
+            user_agent = request.headers.get("User-Agent", "")
+            log_gdpr_consent(
+                user_id=user_id or "anonymous",
+                provider=gdpr_consent.get("provider", "unknown"),
+                jurisdiction=gdpr_consent.get("jurisdiction", "unknown"),
+                ip_address=client_ip.split(",")[0].strip() if client_ip else "unknown",
+                user_agent=user_agent
+            )
 
         # Generate cryptographically secure token
         session_token = secrets.token_urlsafe(32)

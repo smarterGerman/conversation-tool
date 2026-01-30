@@ -870,7 +870,14 @@ When ending:
           const authOptions = {
             password: passwordRequired ? sessionPassword : null,
             jwtToken: hasCourseAuth ? jwtToken : null,
-            signedParams: hasCourseAuth ? signedUrlParams : null
+            signedParams: hasCourseAuth ? signedUrlParams : null,
+            // Include GDPR consent for server-side audit logging
+            gdprConsent: hasGdprConsent && providerInfo.requires_consent ? {
+              provider: providerInfo.name,
+              jurisdiction: providerInfo.jurisdiction,
+              consented: true,
+              timestamp: localStorage.getItem("sg_gdpr_consent_date") || new Date().toISOString()
+            } : null
           };
           await this.client.connect(token, authOptions);
 

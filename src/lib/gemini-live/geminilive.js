@@ -253,6 +253,9 @@ export class GeminiLiveAPI {
       if (authOptions.signedParams) {
         authPayload.signed_params = authOptions.signedParams;
       }
+      if (authOptions.gdprConsent) {
+        authPayload.gdpr_consent = authOptions.gdprConsent;
+      }
 
       const response = await fetch("/api/auth", {
         method: "POST",
