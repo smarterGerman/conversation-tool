@@ -505,6 +505,10 @@ class ViewChat extends HTMLElement {
 
     // Helper to perform navigation
     const doEndSession = () => {
+      // Capture transcript before cleanup
+      const transcriptEl = this.querySelector("live-transcript");
+      const transcript = transcriptEl ? transcriptEl.getTranscriptText() : "";
+
       // Cleanup Gemini session
       if (this.audioStreamer) this.audioStreamer.stop();
       if (this.client) this.client.disconnect();
@@ -518,9 +522,10 @@ class ViewChat extends HTMLElement {
 
       console.log("👋 [App] Session ended by user");
 
-      // Incomplete session
+      // Incomplete session with transcript
       const result = {
         incomplete: true,
+        transcript: transcript,
       };
 
       this.dispatchEvent(
@@ -627,16 +632,21 @@ class ViewChat extends HTMLElement {
 
       // Delay cleanup to allow the agent's congratulatory message to be heard
       setTimeout(() => {
+        // Capture transcript before cleanup
+        const transcriptEl = this.querySelector("live-transcript");
+        const transcript = transcriptEl ? transcriptEl.getTranscriptText() : "";
+
         // Cleanup
         if (this.audioStreamer) this.audioStreamer.stop();
         if (this.client) this.client.disconnect();
         if (this.audioPlayer) this.audioPlayer.interrupt();
 
-        // Navigate to summary
+        // Navigate to summary with transcript
         const result = {
           score: args.score.toString(),
           level: level,
           notes: args.feedback_pointers,
+          transcript: transcript,
         };
 
         this.dispatchEvent(
@@ -770,6 +780,12 @@ TEACHING PROTOCOL:
 4. **Scaffolding**: If the user is hesitant, provide the start of a sentence in German or give them two options to choose from to keep the momentum.
 5. **Mixed-Language Support**: Use English for teaching moments, but always pivot back to German to maintain the immersive feel.
 
+TRANSLATION RULES (VERY IMPORTANT):
+- ONLY translate German→English when the user EXPLICITLY asks (e.g., "What does X mean?", "What's X in English?")
+- When teaching vocabulary, say the German word/phrase first, then explain in English - but ONLY for new vocabulary you're introducing
+- NEVER say things like "this German word means X in English" unless directly asked
+- The user is learning German, not English - keep the focus on German output
+
 REPETITION PRACTICE (use occasionally, not every time):
 When you teach a new phrase or the user struggles with pronunciation:
 - Ask "Möchtest du das üben?" (Would you like to practice that?)
@@ -818,7 +834,12 @@ INTERACTION GUIDELINES:
 2. Utilising the proactive audio feature, do not respond until it is necessary (i.e. the user has finished their turn).
 3. Be helpful but strict about language practice. It is just like speaking to a multilingual person.
 4. You cannot proceed without the user speaking German themselves.
-5. If you need to give feedback, corrections, or translations, use the user's native language (English).
+
+TRANSLATION RULES (VERY IMPORTANT):
+- ONLY translate when the user EXPLICITLY asks (e.g., "What does X mean?", "How do you say X in German?", "What's X in English?")
+- NEVER voluntarily translate German words to English - the user is learning German, not English
+- Stay in character speaking German. Use English ONLY for corrections or when directly asked for translations
+- If you must give brief feedback on grammar, keep it minimal and immediately return to German
 
 NO FREE RIDES POLICY:
 If the user asks for help in English (e.g., "please can you repeat"), you MUST NOT simply answer.
@@ -859,10 +880,10 @@ When ending:
           );
           this.client.setSystemInstructions(systemInstruction);
 
-          // Configure Transcription based on user preference
-          const transcriptEnabled = localStorage.getItem('immergo_transcript') === 'true';
-          this.client.setInputAudioTranscription(transcriptEnabled);
-          this.client.setOutputAudioTranscription(transcriptEnabled);
+          // Always enable transcription (toggle only controls visibility, not capture)
+          // This ensures transcript is available even if user toggles mid-session
+          this.client.setInputAudioTranscription(true);
+          this.client.setOutputAudioTranscription(true);
 
           // Clear previous transcript when starting new session
           const transcriptEl = this.querySelector("live-transcript");
