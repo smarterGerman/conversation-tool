@@ -706,7 +706,8 @@ When ending:
           console.log("🔌 [App] Connecting to backend...");
 
           // Check if password is required and get it
-          if (passwordRequired && !sessionPassword) {
+          // Skip password for users with course auth (signed URL or JWT)
+          if (passwordRequired && !hasCourseAuth && !sessionPassword) {
             try {
               await requestPassword();
             } catch (err) {
