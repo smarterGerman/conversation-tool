@@ -281,58 +281,6 @@ class ViewChat extends HTMLElement {
             </div>
         </div>
 
-        <!-- GDPR Consent Dialog (for non-EU providers like Qwen) -->
-        <div id="gdpr-consent-dialog" class="hidden" style="
-            position: fixed; inset: 0;
-            background: rgba(0,0,0,0.6);
-            backdrop-filter: blur(4px);
-            z-index: 20;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-        ">
-            <div style="background: var(--braun-white); color: var(--braun-black); padding: var(--spacing-xl); border-radius: var(--radius-lg); max-width: 450px; text-align: left; box-shadow: var(--shadow-lg);">
-                <h3 style="margin-bottom: var(--spacing-sm); color: var(--braun-orange); display: flex; align-items: center; gap: 8px;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-                        <line x1="12" y1="9" x2="12" y2="13"></line>
-                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
-                    </svg>
-                    Data Processing Notice
-                </h3>
-                <p id="gdpr-consent-text" style="margin-bottom: var(--spacing-md); line-height: 1.6; color: var(--color-text-sub); font-size: 0.95rem;">
-                    This conversation uses <strong id="provider-name">Alibaba Qwen</strong> AI.
-                    Your voice data will be processed in <strong id="provider-jurisdiction">China</strong>,
-                    where GDPR protections do not apply.
-                </p>
-                <p style="margin-bottom: var(--spacing-md); line-height: 1.6; color: var(--color-text-sub); font-size: 0.9rem;">
-                    By continuing, you explicitly consent to this international data transfer.
-                    <a href="/privacy" target="_blank" style="color: var(--braun-orange);">Read our Privacy Policy</a>
-                </p>
-                <div style="display: flex; gap: var(--spacing-sm);">
-                    <button id="cancel-consent" style="
-                        flex: 1;
-                        background: var(--braun-light);
-                        color: var(--braun-dark);
-                        border: none;
-                        padding: 12px 24px;
-                        border-radius: var(--radius-md);
-                        cursor: pointer;
-                        font-weight: 700;
-                    ">Cancel</button>
-                    <button id="accept-consent" style="
-                        flex: 1;
-                        background: var(--braun-orange);
-                        color: white;
-                        border: none;
-                        padding: 12px 24px;
-                        border-radius: var(--radius-md);
-                        cursor: pointer;
-                        font-weight: 700;
-                        box-shadow: var(--shadow-raised);
-                    ">I Understand and Consent</button>
-                </div>
-            </div>
-        </div>
-
       </div>
     `;
 
@@ -358,16 +306,6 @@ class ViewChat extends HTMLElement {
     let passwordRequired = false;
     let courseAuthEnabled = false;
 
-    // GDPR consent dialog elements
-    const consentDialog = this.querySelector("#gdpr-consent-dialog");
-    const cancelConsentBtn = this.querySelector("#cancel-consent");
-    const acceptConsentBtn = this.querySelector("#accept-consent");
-    const providerNameEl = this.querySelector("#provider-name");
-    const providerJurisdictionEl = this.querySelector("#provider-jurisdiction");
-
-    // Provider info and consent state
-    let providerInfo = { name: "Google Gemini", jurisdiction: "US/EU", requires_consent: false };
-    let hasGdprConsent = localStorage.getItem("sg_gdpr_consent") === "true";
 
     // Check for JWT or signed URL params (for course platform integration)
     const urlParams = new URLSearchParams(window.location.search);
@@ -395,20 +333,6 @@ class ViewChat extends HTMLElement {
         }
       })
       .catch(() => {});
-
-    // Fetch provider info to check if GDPR consent is needed
-    fetch("/api/provider")
-      .then((res) => res.json())
-      .then((info) => {
-        providerInfo = info;
-        // Update dialog text with provider info
-        if (providerNameEl) providerNameEl.textContent = info.name || "Unknown";
-        if (providerJurisdictionEl) providerJurisdictionEl.textContent = info.jurisdiction || "Unknown";
-      })
-      .catch(() => {
-        // Default to Gemini (no consent needed) on error
-        providerInfo = { name: "Google Gemini", jurisdiction: "US/EU", requires_consent: false };
-      });
 
     cancelPasswordBtn.addEventListener("click", () => {
       passwordDialog.classList.add("hidden");
@@ -470,37 +394,6 @@ class ViewChat extends HTMLElement {
       passwordDialog.style.display = "flex";
       passwordInput.value = "";
       passwordInput.focus();
-    };
-
-    // Helper to request GDPR consent (for non-EU providers)
-    const requestGdprConsent = () => {
-      return new Promise((resolve, reject) => {
-        consentDialog.classList.remove("hidden");
-        consentDialog.style.display = "flex";
-
-        const handleAccept = () => {
-          hasGdprConsent = true;
-          localStorage.setItem("sg_gdpr_consent", "true");
-          localStorage.setItem("sg_gdpr_consent_provider", providerInfo.name);
-          localStorage.setItem("sg_gdpr_consent_date", new Date().toISOString());
-          consentDialog.classList.add("hidden");
-          consentDialog.style.display = "none";
-          acceptConsentBtn.removeEventListener("click", handleAccept);
-          cancelConsentBtn.removeEventListener("click", handleCancel);
-          resolve(true);
-        };
-
-        const handleCancel = () => {
-          consentDialog.classList.add("hidden");
-          consentDialog.style.display = "none";
-          acceptConsentBtn.removeEventListener("click", handleAccept);
-          cancelConsentBtn.removeEventListener("click", handleCancel);
-          reject(new Error("GDPR consent declined"));
-        };
-
-        acceptConsentBtn.addEventListener("click", handleAccept);
-        cancelConsentBtn.addEventListener("click", handleCancel);
-      });
     };
 
     // Helper to perform navigation
@@ -922,36 +815,12 @@ When ending:
             }
           }
 
-          // Check if GDPR consent is required (for non-EU providers like Qwen)
-          if (providerInfo.requires_consent && !hasGdprConsent) {
-            try {
-              await requestGdprConsent();
-              console.log("GDPR consent obtained for", providerInfo.name);
-            } catch (err) {
-              console.log("GDPR consent declined");
-              isSpeaking = false;
-              micBtn.classList.remove('active');
-              micBtn.innerHTML = `<span style="font-size: 1rem; font-weight: 800; letter-spacing: 0.02em;">Start Conversation</span>`;
-              userViz.disconnect();
-              modelViz.disconnect();
-              statusEl.textContent = "";
-              return;
-            }
-          }
-
           // Pass auth credentials based on what's available
           // Note: reCAPTCHA removed - all users authenticate via JWT (bypasses reCAPTCHA)
           const authOptions = {
             password: passwordRequired ? sessionPassword : null,
             jwtToken: hasCourseAuth ? jwtToken : null,
-            signedParams: hasCourseAuth ? signedUrlParams : null,
-            // Include GDPR consent for server-side audit logging
-            gdprConsent: hasGdprConsent && providerInfo.requires_consent ? {
-              provider: providerInfo.name,
-              jurisdiction: providerInfo.jurisdiction,
-              consented: true,
-              timestamp: localStorage.getItem("sg_gdpr_consent_date") || new Date().toISOString()
-            } : null
+            signedParams: hasCourseAuth ? signedUrlParams : null
           };
           await this.client.connect(null, authOptions);
 

@@ -32,7 +32,7 @@ from server.recaptcha_validator import RecaptchaValidator
 from server.gemini_live import GeminiLive
 from server.ai_provider import AILiveProvider, get_provider_info
 from server.fingerprint import generate_fingerprint
-from server.simple_tracker import simpletrack, log_gdpr_consent
+from server.simple_tracker import simpletrack
 from server.config_utils import get_project_id
 from server.course_auth import course_auth
 from server.teachable_auth import teachable_auth
@@ -73,11 +73,6 @@ MAX_MESSAGE_SIZE = int(os.getenv("MAX_MESSAGE_SIZE", "1048576"))  # 1MB default
 # Allowed frame ancestors for CSP (comma-separated) - controls which sites can embed this app in an iframe
 ALLOWED_FRAME_ANCESTORS = os.getenv("ALLOWED_FRAME_ANCESTORS", "")
 
-# AI Provider configuration
-AI_PROVIDER = os.getenv("AI_PROVIDER", "gemini")  # "gemini" or "qwen"
-QWEN_API_KEY = os.getenv("QWEN_API_KEY", "")
-QWEN_MODEL = os.getenv("QWEN_MODEL", "qwen3-omni-flash-realtime")
-QWEN_REGION = os.getenv("QWEN_REGION", "intl")  # "intl" for Singapore, "cn" for Beijing
 
 # Initialize FastAPI
 app = FastAPI()
@@ -204,42 +199,27 @@ def consume_token(token: str) -> Optional[Dict]:
 
 def get_ai_provider() -> AILiveProvider:
     """
-    Factory function to create the appropriate AI provider based on configuration.
+    Factory function to create the AI provider.
 
     Returns:
-        AILiveProvider instance (GeminiLive or QwenOmniLive)
+        AILiveProvider instance (GeminiLive)
     """
-    if AI_PROVIDER == "qwen":
-        if not QWEN_API_KEY:
-            logger.error("QWEN_API_KEY not set but AI_PROVIDER=qwen")
-            raise ValueError("Qwen provider requires QWEN_API_KEY")
-
-        from server.qwen_live import QwenOmniLive
-        return QwenOmniLive(
-            api_key=QWEN_API_KEY,
-            model=QWEN_MODEL,
-            region=QWEN_REGION,
-            input_sample_rate=16000
-        )
-    else:
-        return GeminiLive(
-            project_id=PROJECT_ID,
-            location=LOCATION,
-            model=MODEL,
-            input_sample_rate=16000
-        )
+    return GeminiLive(
+        project_id=PROJECT_ID,
+        location=LOCATION,
+        model=MODEL,
+        input_sample_rate=16000
+    )
 
 
 @app.get("/api/provider")
 async def get_provider_endpoint():
     """
     Returns information about the current AI provider.
-
-    Used by frontend to determine if GDPR consent is required.
     """
     provider = get_ai_provider()
     return {
-        "provider": AI_PROVIDER,
+        "provider": "gemini",
         **get_provider_info(provider)
     }
 
@@ -379,8 +359,6 @@ async def authenticate(request: Request):
         password = data.get("password")
         jwt_token = data.get("jwt_token")
         signed_params = data.get("signed_params")  # {user, exp, sig, course}
-        gdpr_consent = data.get("gdpr_consent")  # {provider, jurisdiction, consented}
-
         course_user = None
 
         # Method 1: JWT token from course platform
@@ -451,18 +429,6 @@ async def authenticate(request: Request):
 
         # Calculate effective session limit (minimum of configured limit and remaining quota)
         effective_session_limit = min(SESSION_TIME_LIMIT, int(remaining_seconds))
-
-        # Log GDPR consent if provided (for non-EU providers like Qwen)
-        if gdpr_consent and gdpr_consent.get("consented"):
-            client_ip = request.headers.get("X-Forwarded-For", request.client.host if request.client else "unknown")
-            user_agent = request.headers.get("User-Agent", "")
-            log_gdpr_consent(
-                user_id=user_id or "anonymous",
-                provider=gdpr_consent.get("provider", "unknown"),
-                jurisdiction=gdpr_consent.get("jurisdiction", "unknown"),
-                ip_address=client_ip.split(",")[0].strip() if client_ip else "unknown",
-                user_agent=user_agent
-            )
 
         # Generate cryptographically secure token
         session_token = secrets.token_urlsafe(32)

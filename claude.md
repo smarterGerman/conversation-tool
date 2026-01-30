@@ -151,7 +151,6 @@ gh workflow run deploy.yml
 | `REDIS_URL` | Redis connection string |
 | `TEACHABLE_CLIENT_ID` | Teachable OAuth |
 | `TEACHABLE_CLIENT_SECRET` | Teachable OAuth |
-| `QWEN_API_KEY` | Qwen AI provider |
 
 ### Cloud Run Service
 - **Project:** smartergerman-conversation

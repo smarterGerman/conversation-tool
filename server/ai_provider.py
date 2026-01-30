@@ -16,9 +16,7 @@
 Abstract base class for real-time AI conversation providers.
 
 This module defines the interface that all AI providers must implement
-to be used with the conversation tool. Currently supported providers:
-- Google Gemini Live (default)
-- Alibaba Qwen3-Omni (alternative, requires explicit GDPR consent for EU users)
+to be used with the conversation tool.
 """
 
 from abc import ABC, abstractmethod
