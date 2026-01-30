@@ -39,7 +39,7 @@ class AILiveProvider(ABC):
         Return the human-readable provider name.
 
         Used for logging and user-facing disclosure.
-        Example: "Google Gemini", "Alibaba Qwen"
+        Example: "Google Gemini"
         """
         pass
 

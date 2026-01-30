@@ -41,13 +41,11 @@ We process your data for the following purposes:
 | Authenticate users | Contract performance (Art. 6(1)(b)) |
 | Improve AI responses | Legitimate interest (Art. 6(1)(f)) |
 | Prevent abuse/fraud | Legitimate interest (Art. 6(1)(f)) |
-| International transfers (Qwen) | Explicit consent (Art. 49(1)(a)) |
+## 5. AI Service Provider
 
-## 5. AI Service Providers
+Your voice data is processed by a third-party AI provider to generate conversational responses.
 
-Your voice data is processed by third-party AI providers to generate conversational responses. The current providers are:
-
-### 5.1 Google Gemini (Default)
+### Google Gemini
 
 - **Company:** Google LLC
 - **Data location:** United States / European Union
@@ -55,29 +53,6 @@ Your voice data is processed by third-party AI providers to generate conversatio
 - **Privacy policy:** https://policies.google.com/privacy
 
 Google processes your voice data to generate AI responses. Data may be processed in the US under the EU-US Data Privacy Framework, which provides GDPR-equivalent protections.
-
-### 5.2 Alibaba Qwen (Alternative Provider)
-
-- **Company:** Alibaba Cloud (Alibaba Group)
-- **Data location:** China (Singapore endpoint) / China (Beijing endpoint)
-- **Legal framework:** Explicit user consent required
-- **Privacy policy:** https://chat.qwen.ai/legal-agreement/privacy-policy
-- **Data Processing Addendum:** https://www.alibabacloud.com/help/en/legal/latest/fe2cxg
-
-**Important Notice:** When Qwen is the active AI provider, your voice data is transferred to and processed in China. China does not have an EU adequacy decision, and GDPR protections do not apply to data processed there.
-
-**We will only use Qwen when:**
-1. You have provided explicit consent via the in-app consent dialog
-2. You have been informed that your data will be processed in China
-3. You understand that you cannot exercise GDPR rights for data processed there
-
-**Your consent is:**
-- Freely given (you can decline and the service will not start)
-- Specific (applies only to this service)
-- Informed (you are told where data goes and the risks)
-- Revocable (you can withdraw consent at any time)
-
-To withdraw consent, clear your browser's localStorage or contact us.
 
 ## 6. Data Retention
 
@@ -93,7 +68,7 @@ To withdraw consent, clear your browser's localStorage or contact us.
 
 We share your data with:
 
-- **AI providers** (Google/Alibaba) - to generate conversation responses
+- **AI provider** (Google) - to generate conversation responses
 - **Course platforms** (Teachable/LifterLMS) - to verify enrollment
 - **Cloud infrastructure** (Google Cloud Run) - to host the service
 
@@ -111,11 +86,9 @@ As an EU resident, you have the right to:
 | **Restriction** (Art. 18) | Limit how we process your data |
 | **Portability** (Art. 20) | Receive your data in a portable format |
 | **Object** (Art. 21) | Object to processing based on legitimate interest |
-| **Withdraw consent** (Art. 7) | Withdraw consent for Qwen data processing |
+| **Withdraw consent** (Art. 7) | Withdraw consent for data processing |
 
 To exercise these rights, contact privacy@smartergerman.com.
-
-**Note:** For data processed by Alibaba Qwen in China, we cannot guarantee the exercise of GDPR rights as Chinese law does not provide equivalent protections. This is why we require explicit consent before using this provider.
 
 ## 9. Security Measures
 

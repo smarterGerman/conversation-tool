@@ -75,16 +75,9 @@ Standardize the structure of `systemInstruction` in `view-chat.js`:
 - Check browser console for WebSocket errors or audio processing warnings.
 - Ensure `DEV_MODE=True` in `.env` for local development to bypass production-only features like reCAPTCHA.
 
-## AI Provider Configuration
+## AI Provider
 
-### Supported Providers
-
-The application supports multiple AI providers via the abstraction layer in `server/ai_provider.py`:
-
-| Provider | Env Var Value | Data Location | GDPR Status |
-|----------|---------------|---------------|-------------|
-| **Google Gemini** | `gemini` (default) | US/EU | Covered by EU-US DPF |
-| **Alibaba Qwen** | `qwen` | China | Requires explicit consent |
+The application uses **Google Gemini Live** as the AI provider. The abstraction layer in `server/ai_provider.py` allows for future provider additions.
 
 ### Cost Analysis (January 2026)
 
@@ -93,36 +86,14 @@ Based on 5-minute average conversation (3 min user + 2 min AI @ 25 tokens/sec):
 | Provider | Cost per Conversation | 10k Users (10 convos/mo) | 100k Users |
 |----------|----------------------|--------------------------|------------|
 | **Google Gemini** | ~$0.13 | ~$13,000/mo | ~$130,000/mo |
-| **Alibaba Qwen** | ~$0.07 | ~$7,000/mo | ~$70,000/mo |
 | **OpenAI Realtime** | ~$1.50 | ~$150,000/mo | N/A |
 
-**Per-user cost:** ~€0.70-1.50/month (Qwen/Gemini) at 10 conversations/month.
-
-**Self-hosting decision:** At <100k users, API costs (~€1.50/user/month max) don't justify the complexity of self-hosting Qwen3-Omni (requires 2-4× A100 GPUs, DevOps overhead).
-
-### Switching Providers
-
-```bash
-# In GitHub Actions secrets/variables:
-AI_PROVIDER=qwen                           # or "gemini" (default)
-QWEN_API_KEY=sk-xxxx                       # DashScope API key
-QWEN_MODEL=qwen3-omni-flash-realtime       # Model identifier
-QWEN_REGION=intl                           # "intl" (Singapore) or "cn" (Beijing)
-```
-
-### GDPR Compliance
-
-When using Qwen (data processed in China):
-- Frontend shows consent dialog before first session
-- Consent is stored client-side (localStorage) AND server-side (BigQuery)
-- Server logs: timestamp, user_id, provider, IP address
-- Retention: 3 years minimum (GDPR Article 7 requirement)
+**Per-user cost:** ~€1.30/month at 10 conversations/month.
 
 Files:
 - `server/ai_provider.py`: Abstract base class
 - `server/gemini_live.py`: Google Gemini implementation
-- `server/qwen_live.py`: Alibaba Qwen implementation
-- `PRIVACY.md`: Privacy policy with both providers
+- `PRIVACY.md`: Privacy policy
 - `TERMS.md`: Terms of service
 
 ## Code Review

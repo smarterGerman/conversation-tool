@@ -35,17 +35,9 @@ You agree NOT to:
 - Harass, abuse, or harm the AI or other users
 - Use the Service for purposes unrelated to language learning
 
-## 6. AI Provider Changes
+## 6. AI Provider
 
-We may change the AI provider powering the Service at any time. Currently supported providers include:
-
-- **Google Gemini** (default)
-- **Alibaba Qwen** (alternative, requires explicit consent)
-
-When switching to a provider that processes data outside the EU/US Data Privacy Framework, we will:
-1. Notify you before any session starts
-2. Require your explicit consent
-3. Allow you to decline (session will not start)
+The Service is powered by **Google Gemini**. We may change the AI provider in the future, and will update these Terms accordingly.
 
 ## 7. Usage Limits
 

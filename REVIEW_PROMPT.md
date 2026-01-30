@@ -6,7 +6,7 @@ Use this prompt with an AI coding assistant or provide to a professional develop
 
 ## Review Request
 
-Please perform a comprehensive security, architecture, and code quality review of this codebase. The application is a **real-time voice conversation tool** using WebSockets for audio streaming to AI providers (Google Gemini Live / Alibaba Qwen).
+Please perform a comprehensive security, architecture, and code quality review of this codebase. The application is a **real-time voice conversation tool** using WebSockets for audio streaming to Google Gemini Live.
 
 ### Codebase Context
 
@@ -31,7 +31,7 @@ Please perform a comprehensive security, architecture, and code quality review o
 - Check for auth bypass possibilities
 
 **Input Validation:**
-- WebSocket message handling in `server/gemini_live.py` and `server/qwen_live.py`
+- WebSocket message handling in `server/gemini_live.py`
 - REST API input sanitization
 - SQL/NoSQL injection vectors (BigQuery queries in `server/simple_tracker.py`, `server/gdpr_utils.py`)
 - XSS prevention in frontend components
@@ -52,8 +52,8 @@ Please perform a comprehensive security, architecture, and code quality review o
 - Review per-user limits (`DAILY_USER_LIMIT`)
 
 **GDPR Compliance:**
-- Review consent flow in `src/components/view-chat.js`
-- Audit logging in `server/simple_tracker.py` (`log_gdpr_consent`)
+- Review auth flow in `src/components/view-chat.js`
+- Audit logging in `server/simple_tracker.py`
 - Data deletion utilities in `server/gdpr_utils.py`
 - Privacy policy accuracy (`PRIVACY.md`)
 
@@ -61,7 +61,7 @@ Please perform a comprehensive security, architecture, and code quality review o
 
 **Provider Abstraction:**
 - Review `server/ai_provider.py` abstract base class
-- Assess `server/gemini_live.py` and `server/qwen_live.py` implementations
+- Assess `server/gemini_live.py` implementation
 - Check for proper resource cleanup
 - Evaluate error handling patterns
 
@@ -130,20 +130,19 @@ Please perform a comprehensive security, architecture, and code quality review o
 ### High Priority (Security-Critical)
 1. `server/main.py` - Auth endpoints, CORS, middleware
 2. `server/gemini_live.py` - WebSocket handling, API credentials
-3. `server/qwen_live.py` - External API integration
-4. `src/lib/gemini-live/geminilive.js` - Client-side auth, WebSocket
+3. `src/lib/gemini-live/geminilive.js` - Client-side auth, WebSocket
 
 ### Medium Priority (Core Functionality)
-5. `src/components/view-chat.js` - Main UI, GDPR consent, audio handling
-6. `server/simple_tracker.py` - Analytics, GDPR logging
-7. `server/gdpr_utils.py` - Data deletion utilities
-8. `public/audio-processors/*.worklet.js` - Audio processing
+4. `src/components/view-chat.js` - Main UI, auth flow, audio handling
+5. `server/simple_tracker.py` - Analytics logging
+6. `server/gdpr_utils.py` - Data subject request utilities
+7. `public/audio-processors/*.worklet.js` - Audio processing
 
 ### Lower Priority (Supporting Code)
-9. `src/components/app-root.js` - State management
-10. `server/ai_provider.py` - Provider abstraction
-11. `.github/workflows/deploy.yml` - CI/CD
-12. Legal docs: `PRIVACY.md`, `TERMS.md`
+8. `src/components/app-root.js` - State management
+9. `server/ai_provider.py` - Provider abstraction
+10. `.github/workflows/deploy.yml` - CI/CD
+11. Legal docs: `PRIVACY.md`, `TERMS.md`
 
 ---
 
@@ -161,4 +160,4 @@ Please perform a comprehensive security, architecture, and code quality review o
 - Current user base: ~1,000 active users
 - Primary market: EU (GDPR compliance mandatory)
 - Real-time audio latency is critical for user experience
-- Application may switch between AI providers based on cost/availability
+- Application uses Google Gemini as the AI provider
