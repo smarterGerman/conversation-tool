@@ -64,8 +64,56 @@ class AppRoot extends HTMLElement {
         });
     }
 
-    checkAuthentication() {
+    async checkAuthentication() {
         const urlParams = new URLSearchParams(window.location.search);
+
+        // Check for LifterLMS auth_token (from WordPress redirect)
+        const authToken = urlParams.get("auth_token");
+        if (authToken) {
+            // Clean URL immediately
+            window.history.replaceState({}, document.title, window.location.pathname);
+
+            try {
+                const response = await fetch('https://learn.smartergerman.com/wp-json/sg-conversation/v1/verify-token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: authToken })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        // Store user info in session
+                        sessionStorage.setItem('sg_conversation_user', JSON.stringify({
+                            user_id: data.user_id,
+                            email: data.email,
+                            display_name: data.display_name,
+                            tier: data.tier
+                        }));
+                        this.state.isAuthenticated = true;
+                        this.state.userTier = data.tier;
+                        this.render();
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.error('LifterLMS auth verification failed:', e);
+            }
+        }
+
+        // Check for stored LifterLMS session
+        const storedUser = sessionStorage.getItem('sg_conversation_user');
+        if (storedUser) {
+            try {
+                const userData = JSON.parse(storedUser);
+                this.state.isAuthenticated = true;
+                this.state.userTier = userData.tier;
+                this.render();
+                return;
+            } catch (e) {
+                sessionStorage.removeItem('sg_conversation_user');
+            }
+        }
 
         // Check for JWT token
         const jwtToken = urlParams.get("jwt") || urlParams.get("token");
