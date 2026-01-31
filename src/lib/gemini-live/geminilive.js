@@ -31,6 +31,9 @@ export const MultimodalLiveResponseType = {
   ERROR: "ERROR",
   INPUT_TRANSCRIPTION: "INPUT_TRANSCRIPTION",
   OUTPUT_TRANSCRIPTION: "OUTPUT_TRANSCRIPTION",
+  SESSION_RESUMPTION_UPDATE: "SESSION_RESUMPTION_UPDATE",
+  GO_AWAY: "GO_AWAY",
+  MESSAGE_LIMIT_WARNING: "MESSAGE_LIMIT_WARNING",
 };
 
 /**
@@ -81,6 +84,18 @@ export class MultimodalLiveResponseMessage {
         console.log("TOOL CALL response", data?.toolCall);
         this.type = MultimodalLiveResponseType.TOOL_CALL;
         this.data = data?.toolCall;
+      } else if (data?.sessionResumptionUpdate) {
+        console.log("SESSION RESUMPTION UPDATE:", data.sessionResumptionUpdate);
+        this.type = MultimodalLiveResponseType.SESSION_RESUMPTION_UPDATE;
+        this.data = data.sessionResumptionUpdate;
+      } else if (data?.goAway) {
+        console.log("GO AWAY received:", data.goAway);
+        this.type = MultimodalLiveResponseType.GO_AWAY;
+        this.data = data.goAway;
+      } else if (data?.messageLimitWarning) {
+        console.warn("MESSAGE LIMIT WARNING:", data.messageLimitWarning);
+        this.type = MultimodalLiveResponseType.MESSAGE_LIMIT_WARNING;
+        this.data = data.messageLimitWarning;
       } else if (parts?.length && parts[0].text) {
         console.log("TEXT response", parts[0].text);
         this.data = parts[0].text;
@@ -165,6 +180,15 @@ export class GeminiLiveAPI {
     this.lastSetupMessage = null; // Store the last setup message
     this._pendingSessionToken = null; // Token to send after WebSocket opens
 
+    // Session resumption state
+    this._sessionHandle = null; // Current session handle for resumption
+    this._resumptionToken = null; // Token to resume session
+    this._lastAuthOptions = null; // Store auth options for reconnect
+    this._autoReconnect = true; // Enable auto-reconnect by default
+    this._reconnectAttempts = 0;
+    this._maxReconnectAttempts = 3;
+    this._isReconnecting = false;
+
     // Default callbacks
     this.onReceiveResponse = (message) => {
       console.log("Default message received callback", message);
@@ -241,6 +265,13 @@ export class GeminiLiveAPI {
 
   async connect(token, authOptions = {}) {
     try {
+      // Store auth options for potential reconnect
+      this._lastAuthOptions = authOptions;
+      this._reconnectAttempts = 0;
+      this._autoReconnect = true; // Re-enable auto-reconnect on fresh connect
+      this._sessionHandle = null; // Clear old session
+      this._resumptionToken = null;
+
       // 1. Authenticate via REST API
       const authPayload = { recaptcha_token: token };
 
@@ -286,7 +317,60 @@ export class GeminiLiveAPI {
     }
   }
 
+  async _attemptReconnect() {
+    if (!this._autoReconnect || this._isReconnecting) return;
+    if (this._reconnectAttempts >= this._maxReconnectAttempts) {
+      console.log("[GeminiLiveAPI] Max reconnect attempts reached");
+      return;
+    }
+    if (!this._resumptionToken) {
+      console.log("[GeminiLiveAPI] No resumption token available, cannot reconnect");
+      return;
+    }
+
+    this._isReconnecting = true;
+    this._reconnectAttempts++;
+    console.log(`[GeminiLiveAPI] Attempting reconnect ${this._reconnectAttempts}/${this._maxReconnectAttempts}...`);
+
+    try {
+      // Re-authenticate
+      const authPayload = { recaptcha_token: null };
+      if (this._lastAuthOptions?.password) authPayload.password = this._lastAuthOptions.password;
+      if (this._lastAuthOptions?.jwtToken) authPayload.jwt_token = this._lastAuthOptions.jwtToken;
+      if (this._lastAuthOptions?.signedParams) authPayload.signed_params = this._lastAuthOptions.signedParams;
+
+      const response = await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(authPayload),
+      });
+
+      if (!response.ok) {
+        throw new Error("Re-authentication failed");
+      }
+
+      const data = await response.json();
+      this._pendingSessionToken = data.session_token;
+
+      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      const wsUrl = `${protocol}//${window.location.host}/ws`;
+      this.setupWebSocketToService(wsUrl, true); // isReconnect = true
+    } catch (error) {
+      console.error("[GeminiLiveAPI] Reconnect failed:", error);
+      this._isReconnecting = false;
+    }
+  }
+
+  setAutoReconnect(enabled) {
+    this._autoReconnect = enabled;
+  }
+
   disconnect() {
+    // Clear resumption state to prevent auto-reconnect on intentional disconnect
+    this._resumptionToken = null;
+    this._sessionHandle = null;
+    this._autoReconnect = false;
+
     if (this.webSocket) {
       this.webSocket.close();
       this.connected = false;
@@ -321,6 +405,37 @@ export class GeminiLiveAPI {
 
     try {
       const messageData = JSON.parse(messageEvent.data);
+
+      // Handle session resumption updates internally
+      if (messageData?.sessionResumptionUpdate) {
+        const update = messageData.sessionResumptionUpdate;
+        if (update.sessionId) {
+          this._sessionHandle = update.sessionId;
+        }
+        if (update.token) {
+          this._resumptionToken = update.token;
+          console.log("[GeminiLiveAPI] Received resumption token, auto-reconnect enabled");
+        }
+        // Reset reconnect attempts on successful session update
+        this._reconnectAttempts = 0;
+      }
+
+      // Handle GoAway - server is about to terminate connection
+      if (messageData?.goAway) {
+        console.log("[GeminiLiveAPI] GoAway received, preparing for reconnect...");
+        // The connection will close soon, reconnect will be triggered automatically
+      }
+
+      // Handle message limit warning - proactively reconnect before limit hit
+      if (messageData?.messageLimitWarning) {
+        console.warn(`[GeminiLiveAPI] Message limit warning: ${messageData.messageLimitWarning.count}/${messageData.messageLimitWarning.limit}`);
+        // If we have a resumption token, trigger proactive reconnect
+        if (this._resumptionToken && !this._isReconnecting) {
+          console.log("[GeminiLiveAPI] Triggering proactive reconnect before limit...");
+          this.webSocket.close(); // Will trigger onclose -> _attemptReconnect
+        }
+      }
+
       const message = new MultimodalLiveResponseMessage(messageData);
       this.onReceiveResponse(message);
     } catch (parseError) {
@@ -329,15 +444,23 @@ export class GeminiLiveAPI {
     }
   }
 
-  setupWebSocketToService(url) {
-    console.log("connecting: ", url);
+  setupWebSocketToService(url, isReconnect = false) {
+    console.log("connecting: ", url, isReconnect ? "(reconnect)" : "");
 
     this.webSocket = new WebSocket(url);
     this.webSocket.binaryType = "arraybuffer";
 
     this.webSocket.onclose = (event) => {
       console.log("websocket closed: ", event);
+      const wasConnected = this.connected;
       this.connected = false;
+
+      // Attempt reconnect if we were connected and have a resumption token
+      if (wasConnected && this._resumptionToken && !this._isReconnecting) {
+        console.log("[GeminiLiveAPI] Unexpected disconnect, attempting reconnect...");
+        setTimeout(() => this._attemptReconnect(), 500);
+      }
+
       if (this.onClose) this.onClose(event);
     };
 
@@ -351,6 +474,7 @@ export class GeminiLiveAPI {
       console.log("websocket open: ", event);
       this.connected = true;
       this.totalBytesSent = 0;
+      this._isReconnecting = false;
 
       // Send auth token as first message (security improvement - not in URL)
       if (this._pendingSessionToken) {
@@ -358,7 +482,7 @@ export class GeminiLiveAPI {
         this._pendingSessionToken = null; // Clear after sending
       }
 
-      this.sendInitialSetupMessages();
+      this.sendInitialSetupMessages(isReconnect);
       this.onConnectionStarted();
       if (this.onOpen) this.onOpen(event);
     };
@@ -377,7 +501,7 @@ export class GeminiLiveAPI {
     return tools;
   }
 
-  sendInitialSetupMessages() {
+  sendInitialSetupMessages(isReconnect = false) {
     const tools = this.getFunctionDefinitions();
 
     const sessionSetupMessage = {
@@ -401,8 +525,17 @@ export class GeminiLiveAPI {
         realtime_input_config: {
           automatic_activity_detection: this.automaticActivityDetection,
         },
+
+        // Enable session resumption - tokens valid for 2 hours after disconnect
+        session_resumption: { handle: this._sessionHandle },
       },
     };
+
+    // If reconnecting with a resumption token, include it
+    if (isReconnect && this._resumptionToken) {
+      sessionSetupMessage.setup.session_resumption.token = this._resumptionToken;
+      console.log("[GeminiLiveAPI] Reconnecting with resumption token");
+    }
 
     // Add transcription config if enabled
     if (this.inputAudioTranscription) {

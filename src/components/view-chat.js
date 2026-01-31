@@ -574,6 +574,17 @@ class ViewChat extends HTMLElement {
             response.data.finished
           );
         }
+      } else if (
+        response.type === MultimodalLiveResponseType.MESSAGE_LIMIT_WARNING
+      ) {
+        // Play warning bell ~10 seconds before session ends
+        console.log("[App] Message limit warning - playing warning bell");
+        const warningSound = new Audio("/start-bell.mp3");
+        warningSound.volume = 0.4;
+        warningSound.play().catch((e) => console.error("Failed to play warning sound:", e));
+        // Update status to warn user
+        statusEl.textContent = "Session ending soon...";
+        statusEl.style.color = "var(--braun-orange)";
       }
     };
 
