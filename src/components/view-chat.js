@@ -226,41 +226,43 @@ class ViewChat extends HTMLElement {
                 <p style="margin-bottom: var(--spacing-md); line-height: 1.5; color: var(--color-text-sub);">
                     Enter your access password to start practicing.
                 </p>
-                <input id="password-input" type="password" placeholder="Password" style="
-                    width: 100%;
-                    padding: 12px 16px;
-                    border: 2px solid var(--braun-mid);
-                    border-radius: var(--radius-md);
-                    font-size: 1rem;
-                    margin-bottom: var(--spacing-md);
-                    box-sizing: border-box;
-                ">
-                <p id="password-error" class="hidden" style="color: var(--braun-orange); font-size: 0.85rem; margin-bottom: var(--spacing-sm);">
-                    Incorrect password. Please try again.
-                </p>
-                <div style="display: flex; gap: var(--spacing-sm);">
-                    <button id="cancel-password" style="
-                        flex: 1;
-                        background: var(--braun-light);
-                        color: var(--braun-dark);
-                        border: none;
-                        padding: 12px 24px;
-                        border-radius: var(--radius-md);
-                        cursor: pointer;
-                        font-weight: 700;
-                    ">Cancel</button>
-                    <button id="submit-password" style="
-                        flex: 1;
-                        background: var(--braun-orange);
-                        color: white;
-                        border: none;
-                        padding: 12px 24px;
-                        border-radius: var(--radius-md);
-                        cursor: pointer;
-                        font-weight: 700;
-                        box-shadow: var(--shadow-raised);
-                    ">Submit</button>
-                </div>
+                <form id="password-form" autocomplete="on">
+                  <input id="password-input" type="password" placeholder="Password" autocomplete="current-password" style="
+                      width: 100%;
+                      padding: 12px 16px;
+                      border: 2px solid var(--braun-mid);
+                      border-radius: var(--radius-md);
+                      font-size: 1rem;
+                      margin-bottom: var(--spacing-md);
+                      box-sizing: border-box;
+                  ">
+                  <p id="password-error" class="hidden" style="color: var(--braun-orange); font-size: 0.85rem; margin-bottom: var(--spacing-sm);">
+                      Incorrect password. Please try again.
+                  </p>
+                  <div style="display: flex; gap: var(--spacing-sm);">
+                      <button type="button" id="cancel-password" style="
+                          flex: 1;
+                          background: var(--braun-light);
+                          color: var(--braun-dark);
+                          border: none;
+                          padding: 12px 24px;
+                          border-radius: var(--radius-md);
+                          cursor: pointer;
+                          font-weight: 700;
+                      ">Cancel</button>
+                      <button type="submit" id="submit-password" style="
+                          flex: 1;
+                          background: var(--braun-orange);
+                          color: white;
+                          border: none;
+                          padding: 12px 24px;
+                          border-radius: var(--radius-md);
+                          cursor: pointer;
+                          font-weight: 700;
+                          box-shadow: var(--shadow-raised);
+                      ">Submit</button>
+                  </div>
+                </form>
             </div>
         </div>
 
@@ -325,6 +327,7 @@ class ViewChat extends HTMLElement {
     });
 
     // Helper to request password
+    const passwordForm = this.querySelector("#password-form");
     const requestPassword = () => {
       return new Promise((resolve, reject) => {
         passwordDialog.classList.remove("hidden");
@@ -333,33 +336,33 @@ class ViewChat extends HTMLElement {
         passwordError.classList.add("hidden");
         passwordInput.focus();
 
-        const handleSubmit = () => {
+        const handleSubmit = (e) => {
+          if (e) e.preventDefault();
           const pw = passwordInput.value.trim();
           if (pw) {
             sessionPassword = pw; // Keep in memory only, not in storage
             passwordDialog.classList.add("hidden");
             passwordDialog.style.display = "none";
-            submitPasswordBtn.removeEventListener("click", handleSubmit);
+            passwordForm.removeEventListener("submit", handleSubmit);
             passwordInput.removeEventListener("keydown", handleKeydown);
             resolve(pw);
           }
         };
 
         const handleKeydown = (e) => {
-          if (e.key === "Enter") handleSubmit();
           if (e.key === "Escape") {
             cancelPasswordBtn.click();
             reject(new Error("Password entry cancelled"));
           }
         };
 
-        submitPasswordBtn.addEventListener("click", handleSubmit);
+        passwordForm.addEventListener("submit", handleSubmit);
         passwordInput.addEventListener("keydown", handleKeydown);
 
         // Update cancel to reject
         const handleCancel = () => {
           cancelPasswordBtn.removeEventListener("click", handleCancel);
-          submitPasswordBtn.removeEventListener("click", handleSubmit);
+          passwordForm.removeEventListener("submit", handleSubmit);
           passwordInput.removeEventListener("keydown", handleKeydown);
           reject(new Error("Password entry cancelled"));
         };
