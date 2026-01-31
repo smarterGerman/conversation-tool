@@ -227,6 +227,12 @@ class ViewChat extends HTMLElement {
                     Enter your access password to start practicing.
                 </p>
                 <form id="password-form" autocomplete="on">
+                  <input type="text" name="username" autocomplete="username" value="student" style="
+                      position: absolute;
+                      left: -9999px;
+                      width: 1px;
+                      height: 1px;
+                  " tabindex="-1" aria-hidden="true">
                   <input id="password-input" type="password" placeholder="Password" autocomplete="current-password" style="
                       width: 100%;
                       padding: 12px 16px;
