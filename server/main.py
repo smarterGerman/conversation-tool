@@ -28,6 +28,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from dotenv import load_dotenv
+import google.genai as genai
 from server.gemini_live import GeminiLive
 from server.ai_provider import AILiveProvider, get_provider_info
 from server.fingerprint import generate_fingerprint
@@ -255,6 +256,85 @@ async def get_status():
         "course_auth_enabled": course_auth.is_enabled(),
         "teachable_auth_enabled": teachable_auth.is_enabled()
     }
+
+@app.post("/api/evaluate")
+@limiter.limit("10 per minute", key_func=get_fingerprint_key)
+async def evaluate_conversation(request: Request):
+    """
+    Evaluates a German conversation transcript using Gemini Flash.
+    Returns structured feedback on grammar, vocabulary, fluency, and specific improvements.
+    """
+    try:
+        data = await request.json()
+        transcript = data.get("transcript", "")
+        mission_context = data.get("mission", "")
+
+        if not transcript or len(transcript.strip()) < 20:
+            raise HTTPException(status_code=400, detail="Transcript too short to evaluate")
+
+        # Initialize Gemini client
+        client = genai.Client(vertexai=True, project=PROJECT_ID, location=LOCATION)
+
+        evaluation_prompt = f"""You are a professional German language teacher evaluating a student's spoken German conversation.
+
+CONVERSATION CONTEXT: {mission_context}
+
+TRANSCRIPT:
+{transcript}
+
+Evaluate this conversation and provide feedback in the following JSON format:
+{{
+    "overall_score": <number 1-10>,
+    "grammar": {{
+        "score": <number 1-10>,
+        "feedback": "<2-3 sentences about grammar usage>",
+        "corrections": ["<specific error> → <correction>", ...]
+    }},
+    "vocabulary": {{
+        "score": <number 1-10>,
+        "feedback": "<2-3 sentences about vocabulary range and appropriateness>",
+        "good_phrases": ["<phrase they used well>", ...],
+        "suggestions": ["<phrase they could have used>", ...]
+    }},
+    "fluency": {{
+        "score": <number 1-10>,
+        "feedback": "<2-3 sentences about natural flow, hesitation, response appropriateness>"
+    }},
+    "task_completion": {{
+        "score": <number 1-10>,
+        "feedback": "<2-3 sentences about how well they accomplished the conversational goal>"
+    }},
+    "summary": "<3-4 sentences overall assessment and encouragement>",
+    "focus_areas": ["<specific thing to practice>", "<another thing>", "<third thing>"]
+}}
+
+Be encouraging but honest. Focus on practical improvements. Write feedback in English.
+Return ONLY valid JSON, no markdown formatting."""
+
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=evaluation_prompt
+        )
+
+        # Parse JSON response
+        response_text = response.text.strip()
+        # Remove markdown code blocks if present
+        if response_text.startswith("```"):
+            response_text = response_text.split("\n", 1)[1]
+            if response_text.endswith("```"):
+                response_text = response_text.rsplit("```", 1)[0]
+
+        evaluation = json.loads(response_text)
+
+        logger.info(f"Evaluation completed: overall_score={evaluation.get('overall_score')}")
+        return {"evaluation": evaluation}
+
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse evaluation response: {e}")
+        raise HTTPException(status_code=500, detail="Failed to parse evaluation")
+    except Exception as e:
+        logger.error(f"Evaluation error: {e}")
+        raise HTTPException(status_code=500, detail=f"Evaluation failed: {str(e)}")
 
 @app.get("/api/teachable/authorize")
 async def teachable_authorize(redirect: str = ""):

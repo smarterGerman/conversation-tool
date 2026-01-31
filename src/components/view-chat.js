@@ -417,6 +417,7 @@ class ViewChat extends HTMLElement {
       const result = {
         incomplete: true,
         transcript: transcript,
+        mission: this._mission?.title || "",
       };
 
       this.dispatchEvent(
@@ -533,6 +534,7 @@ class ViewChat extends HTMLElement {
         const result = {
           notes: args.feedback_pointers,
           transcript: transcript,
+          mission: this._mission?.title || "",
         };
 
         this.dispatchEvent(
