@@ -725,12 +725,24 @@ When ending: Brief goodbye in character, then call complete_mission with 3 speci
 
           // Pass auth credentials based on what's available
           // Note: reCAPTCHA removed - all users authenticate via JWT (bypasses reCAPTCHA)
+          // Check for LifterLMS user in sessionStorage
+          let lifterlmsUser = null;
+          try {
+            const storedUser = sessionStorage.getItem('sg_conversation_user');
+            if (storedUser) {
+              lifterlmsUser = JSON.parse(storedUser);
+            }
+          } catch (e) {
+            console.warn('Failed to parse LifterLMS user:', e);
+          }
+
           const authOptions = {
             password: passwordRequired ? sessionPassword : null,
             jwtToken: hasCourseAuth ? jwtToken : null,
-            signedParams: hasCourseAuth ? signedUrlParams : null
+            signedParams: hasCourseAuth ? signedUrlParams : null,
+            lifterlmsUser: lifterlmsUser
           };
-          await this.client.connect(null, authOptions);
+          await this.client.connect(authOptions);
 
           // Mark auth success (without storing password)
           if (passwordRequired && sessionPassword) {

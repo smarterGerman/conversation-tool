@@ -30,9 +30,8 @@ def client():
     """Create a test client with mocked dependencies."""
     # Mock the Google Cloud dependencies
     with patch("server.main.get_project_id", return_value="test-project"):
-        with patch("server.main.RecaptchaValidator"):
-            from server.main import app
-            yield TestClient(app)
+        from server.main import app
+        yield TestClient(app)
 
 
 class TestStatusEndpoint:

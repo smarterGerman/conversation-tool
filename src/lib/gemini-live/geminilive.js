@@ -263,7 +263,7 @@ export class GeminiLiveAPI {
     functionToCall.runFunction(parameters);
   }
 
-  async connect(token, authOptions = {}) {
+  async connect(authOptions = {}) {
     try {
       // Store auth options for potential reconnect
       this._lastAuthOptions = authOptions;
@@ -273,7 +273,7 @@ export class GeminiLiveAPI {
       this._resumptionToken = null;
 
       // 1. Authenticate via REST API
-      const authPayload = { recaptcha_token: token };
+      const authPayload = {};
 
       // Add auth credentials based on what's provided
       if (authOptions.password) {
@@ -287,6 +287,9 @@ export class GeminiLiveAPI {
       }
       if (authOptions.gdprConsent) {
         authPayload.gdpr_consent = authOptions.gdprConsent;
+      }
+      if (authOptions.lifterlmsUser) {
+        authPayload.lifterlms_user = authOptions.lifterlmsUser;
       }
 
       const response = await fetch("/api/auth", {
@@ -334,7 +337,7 @@ export class GeminiLiveAPI {
 
     try {
       // Re-authenticate
-      const authPayload = { recaptcha_token: null };
+      const authPayload = {};
       if (this._lastAuthOptions?.password) authPayload.password = this._lastAuthOptions.password;
       if (this._lastAuthOptions?.jwtToken) authPayload.jwt_token = this._lastAuthOptions.jwtToken;
       if (this._lastAuthOptions?.signedParams) authPayload.signed_params = this._lastAuthOptions.signedParams;

@@ -28,7 +28,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from dotenv import load_dotenv
-from server.recaptcha_validator import RecaptchaValidator
 from server.gemini_live import GeminiLive
 from server.ai_provider import AILiveProvider, get_provider_info
 from server.fingerprint import generate_fingerprint
@@ -63,7 +62,6 @@ MODEL = os.getenv("MODEL", "gemini-live-2.5-flash-native-audio")
 SESSION_TIME_LIMIT = int(os.getenv("SESSION_TIME_LIMIT", "300"))
 # Access password for the tool (optional but recommended)
 ACCESS_PASSWORD = os.getenv("ACCESS_PASSWORD", "")
-RECAPTCHA_SITE_KEY = os.getenv("RECAPTCHA_SITE_KEY")
 REDIS_URL = os.getenv("REDIS_URL")
 GLOBAL_RATE_LIMIT = os.getenv("GLOBAL_RATE_LIMIT", "1000 per hour")
 PER_USER_RATE_LIMIT = os.getenv("PER_USER_RATE_LIMIT", "10 per minute")
@@ -76,12 +74,6 @@ ALLOWED_FRAME_ANCESTORS = os.getenv("ALLOWED_FRAME_ANCESTORS", "")
 
 # Initialize FastAPI
 app = FastAPI()
-
-# Initialize Recaptcha Validator
-recaptcha_validator = RecaptchaValidator(
-    project_id=PROJECT_ID,
-    recaptcha_key=RECAPTCHA_SITE_KEY
-)
 
 def get_fingerprint_key(request: Request):
     return generate_fingerprint(request)
@@ -250,7 +242,6 @@ async def get_terms():
 async def get_status():
     """Returns the current configuration mode and public configuration."""
     missing = []
-    # Only check Redis - recaptcha is no longer used (all users authenticate via JWT)
     if not REDIS_URL:
         missing.append("redis")
 
@@ -259,7 +250,6 @@ async def get_status():
     return {
         "mode": mode,
         "missing": missing,
-        "recaptcha_site_key": RECAPTCHA_SITE_KEY if RECAPTCHA_SITE_KEY else None,
         "session_time_limit": SESSION_TIME_LIMIT,
         "password_required": bool(ACCESS_PASSWORD),
         "course_auth_enabled": course_auth.is_enabled(),
@@ -349,13 +339,13 @@ async def authenticate(request: Request):
     Validates authentication and issues a temporary session token for WebSocket connection.
 
     Supports multiple auth methods (in priority order):
-    1. JWT token from course platform (bypasses password and reCAPTCHA)
+    1. JWT token from course platform
     2. Signed URL params (for iframe embedding)
-    3. Password + reCAPTCHA (fallback)
+    3. LifterLMS auth (from WordPress)
+    4. Password only (fallback for dev/testing)
     """
     try:
         data = await request.json()
-        recaptcha_token = data.get("recaptcha_token")
         password = data.get("password")
         jwt_token = data.get("jwt_token")
         signed_params = data.get("signed_params")  # {user, exp, sig, course}
@@ -367,7 +357,6 @@ async def authenticate(request: Request):
                 result = course_auth.validate_jwt(jwt_token)
                 course_user = result.get("user_id")
                 logger.info(f"Authenticated via JWT: {course_user}")
-                # JWT auth bypasses password and reCAPTCHA
             except ValueError as e:
                 logger.warning(f"JWT validation failed: {e}")
                 raise HTTPException(status_code=403, detail=f"Invalid JWT: {e}")
@@ -378,43 +367,33 @@ async def authenticate(request: Request):
                 result = course_auth.validate_signed_url(signed_params)
                 course_user = result.get("user_id")
                 logger.info(f"Authenticated via signed URL: {course_user}")
-                # Signed URL auth bypasses password and reCAPTCHA
             except ValueError as e:
                 logger.warning(f"Signed URL validation failed: {e}")
                 raise HTTPException(status_code=403, detail=f"Invalid signed URL: {e}")
 
-        # Method 3: Password + reCAPTCHA (traditional auth)
-        else:
+        # Method 3: LifterLMS auth (user authenticated via WordPress)
+        lifterlms_user = data.get("lifterlms_user")  # {user_id, email, tier}
+        if lifterlms_user and lifterlms_user.get("user_id"):
+            course_user = f"lifterlms_{lifterlms_user['user_id']}"
+            tier = lifterlms_user.get("tier", "base")
+            logger.info(f"Authenticated via LifterLMS: {course_user}, tier: {tier}")
+
+            # Set tier-based daily limits (in seconds)
+            # Base (A1): ~3 EUR/month ≈ 30 min/day
+            # Pro: ~10 EUR/month ≈ 100 min/day
+            from server.usage_tracker import set_user_limit
+            if tier == "pro":
+                set_user_limit(course_user, 6000)  # 100 minutes/day
+            else:
+                set_user_limit(course_user, 1800)  # 30 minutes/day
+
+        # Method 4: Password only (fallback for dev/testing)
+        if not course_user:
             # Check access password if configured
             if ACCESS_PASSWORD:
                 if not password or password != ACCESS_PASSWORD:
                     logger.warning("Invalid or missing access password")
                     raise HTTPException(status_code=403, detail="Invalid access password")
-
-            # Check if ReCAPTCHA is configured
-            if not RECAPTCHA_SITE_KEY:
-                 logger.warning("RECAPTCHA_SITE_KEY not set: Skipping validation (Simple Mode)")
-                 # Proceed without validation
-            else:
-                if not recaptcha_token:
-                    raise HTTPException(status_code=400, detail="Missing ReCAPTCHA token")
-
-                if DEV_MODE:
-                    logger.info("DEV_MODE enabled: Skipping ReCAPTCHA validation")
-                    validation_result = {'valid': True, 'passes_threshold': True}
-                else:
-                    validation_result = recaptcha_validator.validate_token(
-                        token=recaptcha_token,
-                        recaptcha_action="LOGIN"
-                    )
-
-                if not validation_result['valid']:
-                    logger.warning(f"ReCAPTCHA failed: {validation_result.get('error')}")
-                    raise HTTPException(status_code=403, detail="ReCAPTCHA validation failed")
-                
-            if not validation_result['passes_threshold']:
-                logger.warning(f"ReCAPTCHA score too low: {validation_result.get('score')}")
-                raise HTTPException(status_code=403, detail="ReCAPTCHA score too low")
 
         # Check usage limits for authenticated users
         user_id = course_user or ""
