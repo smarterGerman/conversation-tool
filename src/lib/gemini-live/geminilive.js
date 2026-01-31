@@ -299,7 +299,12 @@ export class GeminiLiveAPI {
       });
 
       if (!response.ok) {
-        const error = new Error("Authentication failed");
+        let errorMessage = "Authentication failed";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.detail || errorMessage;
+        } catch {}
+        const error = new Error(errorMessage);
         error.status = response.status;
         throw error;
       }

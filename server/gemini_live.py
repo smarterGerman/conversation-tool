@@ -142,6 +142,19 @@ class GeminiLive(AILiveProvider):
         # )
         # logger.info("Context window compression enabled: trigger=25000, target=15000 tokens")
 
+        # Session resumption - ALWAYS enable for automatic reconnection with preserved context
+        # Tokens remain valid for 2 hours after session ends
+        resumption_config = types.SessionResumptionConfig()
+        if setup_config and "session_resumption" in setup_config:
+            session_resumption = setup_config["session_resumption"]
+            if session_resumption.get("handle"):
+                resumption_config.handle = session_resumption["handle"]
+            if session_resumption.get("token"):
+                resumption_config.token = session_resumption["token"]
+                logger.info("Session resumption: reconnecting with existing token")
+        config_args["session_resumption"] = resumption_config
+        logger.info("Session resumption enabled")
+
         config = types.LiveConnectConfig(**config_args)
         
         # Connect using the new async client interface
@@ -193,6 +206,8 @@ class GeminiLive(AILiveProvider):
 
             async def receive_loop():
                 message_count = 0
+                MESSAGE_LIMIT_WARNING = 900  # Warn client when approaching 1000 limit
+                limit_warning_sent = False
                 try:
                     logger.info("Starting receive loop...")
                     while True:
@@ -200,6 +215,18 @@ class GeminiLive(AILiveProvider):
                             message_count += 1
                             if message_count % 50 == 0:
                                 logger.debug(f"Received {message_count} messages from Gemini")
+
+                            # Warn client when approaching 1000 message limit
+                            if message_count >= MESSAGE_LIMIT_WARNING and not limit_warning_sent:
+                                limit_warning_sent = True
+                                logger.warning(f"Approaching message limit: {message_count}/1000")
+                                await event_queue.put({
+                                    "messageLimitWarning": {
+                                        "count": message_count,
+                                        "limit": 1000,
+                                        "message": "Approaching session message limit"
+                                    }
+                                })
                             server_content = response.server_content
                             tool_call = response.tool_call
                             
@@ -253,6 +280,32 @@ class GeminiLive(AILiveProvider):
                                         else:
                                             audio_interrupt_callback()
                                     await event_queue.put({"type": "interrupted"})
+
+                            # Session resumption updates - forward to client for auto-reconnect
+                            # Check both possible attribute names
+                            session_update = getattr(response, 'session_resumption_update', None) or getattr(response, 'sessionResumptionUpdate', None)
+                            if session_update:
+                                session_id = getattr(session_update, 'session_id', None) or getattr(session_update, 'sessionId', None)
+                                token = getattr(session_update, 'token', None)
+                                logger.info(f"Session resumption update received - session_id: {session_id[:20] if session_id else 'None'}..., has_token: {bool(token)}")
+                                await event_queue.put({
+                                    "sessionResumptionUpdate": {
+                                        "sessionId": session_id,
+                                        "token": token,
+                                        "resumable": getattr(session_update, 'resumable', True)
+                                    }
+                                })
+
+                            # GoAway - server is terminating connection soon
+                            if hasattr(response, 'go_away') and response.go_away:
+                                go_away = response.go_away
+                                time_left = getattr(go_away, 'time_left', None)
+                                await event_queue.put({
+                                    "goAway": {
+                                        "timeLeft": str(time_left) if time_left else None
+                                    }
+                                })
+                                logger.info(f"GoAway received, connection ending in: {time_left}")
 
                             if tool_call:
                                 function_responses = []

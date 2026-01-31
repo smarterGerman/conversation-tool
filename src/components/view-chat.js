@@ -196,9 +196,9 @@ class ViewChat extends HTMLElement {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
         ">
             <div style="background: var(--braun-white); color: var(--braun-black); padding: var(--spacing-xl); border-radius: var(--radius-lg); max-width: 400px; text-align: center; box-shadow: var(--shadow-lg);">
-                <h3 style="margin-bottom: var(--spacing-sm); color: var(--braun-dark);">Service Busy</h3>
-                <p style="margin-bottom: var(--spacing-lg); line-height: 1.5; color: var(--color-text-sub);">
-                    Too many conversations happening right now. Please try again in a moment.
+                <h3 id="rate-limit-title" style="margin-bottom: var(--spacing-sm); color: var(--braun-dark);">Session Limit Reached</h3>
+                <p id="rate-limit-message" style="margin-bottom: var(--spacing-lg); line-height: 1.5; color: var(--color-text-sub);">
+                    Please try again later.
                 </p>
                 <button id="close-rate-limit" style="
                     background: var(--braun-orange);
@@ -813,6 +813,19 @@ When ending: Brief goodbye in character, then call complete_mission with 3 speci
           statusEl.textContent = "";
 
           if (err.status === 429) {
+            // Show specific error message from server
+            const titleEl = rateLimitDialog.querySelector("#rate-limit-title");
+            const msgEl = rateLimitDialog.querySelector("#rate-limit-message");
+            if (err.message.toLowerCase().includes("daily limit")) {
+              titleEl.textContent = "Daily Limit Reached";
+              msgEl.textContent = err.message;
+            } else if (err.message.toLowerCase().includes("rate limit") || err.message.toLowerCase().includes("too many")) {
+              titleEl.textContent = "Too Many Requests";
+              msgEl.textContent = "Please wait 60 seconds and try again.";
+            } else {
+              titleEl.textContent = "Connection Issue";
+              msgEl.textContent = "Something went wrong. Please refresh the page and try again. If this persists, contact support.";
+            }
             rateLimitDialog.classList.remove("hidden");
             rateLimitDialog.style.display = "flex";
           } else if (err.status === 403) {

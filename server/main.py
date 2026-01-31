@@ -65,7 +65,9 @@ SESSION_TIME_LIMIT = int(os.getenv("SESSION_TIME_LIMIT", "300"))
 ACCESS_PASSWORD = os.getenv("ACCESS_PASSWORD", "")
 REDIS_URL = os.getenv("REDIS_URL")
 GLOBAL_RATE_LIMIT = os.getenv("GLOBAL_RATE_LIMIT", "1000 per hour")
-PER_USER_RATE_LIMIT = os.getenv("PER_USER_RATE_LIMIT", "10 per minute")
+# Per-fingerprint rate limit - generous since we have per-user usage tracking
+# 60/minute allows for retries, page refreshes, connection issues
+PER_USER_RATE_LIMIT = os.getenv("PER_USER_RATE_LIMIT", "60 per minute")
 DEV_MODE = os.getenv("DEV_MODE", "false") == "true"
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", "")  # Comma-separated list of allowed origins
 MAX_MESSAGE_SIZE = int(os.getenv("MAX_MESSAGE_SIZE", "1048576"))  # 1MB default
@@ -480,9 +482,17 @@ async def authenticate(request: Request):
         if user_id:
             can_start, usage_message = usage_tracker.can_start(user_id)
             if not can_start:
-                logger.warning(f"User {user_id[:20]}... exceeded daily limit")
+                # Log detailed info for debugging
+                from server.usage_tracker import get_user_usage_today, get_user_limit
+                current_usage = get_user_usage_today(user_id)
+                user_limit = get_user_limit(user_id)
+                logger.warning(
+                    f"User {user_id} blocked: usage={current_usage:.0f}s, limit={user_limit}s, "
+                    f"message={usage_message}"
+                )
                 raise HTTPException(status_code=429, detail=usage_message)
             remaining_seconds = usage_tracker.get_remaining(user_id)
+            logger.info(f"User {user_id[:20]}... allowed: {remaining_seconds:.0f}s remaining")
         else:
             remaining_seconds = SESSION_TIME_LIMIT
 
