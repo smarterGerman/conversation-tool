@@ -384,6 +384,12 @@ class ViewChat extends HTMLElement {
 
     // Helper to perform navigation
     const doEndSession = () => {
+      // Clear session warning timer
+      if (this._sessionWarningTimer) {
+        clearTimeout(this._sessionWarningTimer);
+        this._sessionWarningTimer = null;
+      }
+
       // Capture transcript before cleanup
       const transcriptEl = this.querySelector("live-transcript");
       const transcript = transcriptEl ? transcriptEl.getTranscriptText() : "";
@@ -502,6 +508,12 @@ class ViewChat extends HTMLElement {
 
       // Delay cleanup to allow the agent's congratulatory message to be heard
       setTimeout(() => {
+        // Clear session warning timer
+        if (this._sessionWarningTimer) {
+          clearTimeout(this._sessionWarningTimer);
+          this._sessionWarningTimer = null;
+        }
+
         // Capture transcript before cleanup
         const transcriptEl = this.querySelector("live-transcript");
         const transcript = transcriptEl ? transcriptEl.getTranscriptText() : "";
@@ -754,6 +766,16 @@ When ending: Brief goodbye in character, then call complete_mission with 3 speci
           startSound
             .play()
             .catch((e) => console.error("Failed to play start sound:", e));
+
+          // Set timer for warning bell at 2:30 (150 seconds) - ~30 sec before typical 3 min cutoff
+          this._sessionWarningTimer = setTimeout(() => {
+            console.log("[App] Session time warning - 2:30 reached");
+            const warningSound = new Audio("/start-bell.mp3");
+            warningSound.volume = 0.4;
+            warningSound.play().catch((e) => console.error("Failed to play warning sound:", e));
+            statusEl.textContent = "Session ending soon...";
+            statusEl.style.color = "var(--braun-orange)";
+          }, 150000); // 150 seconds = 2:30
         } catch (err) {
           console.error("[App] Failed to start session:", err);
           console.log("Error status:", err.status); // Debug status
