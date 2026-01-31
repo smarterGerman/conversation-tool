@@ -597,7 +597,7 @@ class ViewChat extends HTMLElement {
       ) {
         // Play warning bell ~10 seconds before session ends
         console.log("[App] Message limit warning - playing warning bell");
-        const warningSound = new Audio("/start-bell.mp3");
+        const warningSound = new Audio("/winner-bell.mp3");
         warningSound.volume = 0.4;
         warningSound.play().catch((e) => console.error("Failed to play warning sound:", e));
         // Update status to warn user
@@ -776,7 +776,7 @@ When ending: Brief goodbye in character, then call complete_mission with 3 speci
           // Set timer for warning bell at 2:30 (150 seconds) - ~30 sec before typical 3 min cutoff
           this._sessionWarningTimer = setTimeout(() => {
             console.log("[App] Session time warning - 2:30 reached");
-            const warningSound = new Audio("/start-bell.mp3");
+            const warningSound = new Audio("/winner-bell.mp3");
             warningSound.volume = 0.4;
             warningSound.play().catch((e) => console.error("Failed to play warning sound:", e));
             statusEl.textContent = "Session ending soon...";
