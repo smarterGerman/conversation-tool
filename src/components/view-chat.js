@@ -132,7 +132,7 @@ class ViewChat extends HTMLElement {
           </div>
 
           <!-- Transcript (toggleable) -->
-          <div id="transcript-container" style="width: 100%; height: 140px; position: relative; display: ${localStorage.getItem('immergo_transcript') === 'true' ? 'block' : 'none'};">
+          <div id="transcript-container" style="width: 100%; height: 200px; position: relative; display: ${localStorage.getItem('immergo_transcript') === 'true' ? 'block' : 'none'};">
             <live-transcript></live-transcript>
           </div>
 
@@ -637,6 +637,8 @@ class ViewChat extends HTMLElement {
 
           // Unified prompt - no mode distinction
           const systemInstruction = `You are ${targetRole}, a native German speaker. The user (English native, CEFR ${cefrLevel}) is practicing: "${missionTitle}" (${missionDesc}).
+
+START THE CONVERSATION: Greet the user in character and set up the scenario. Don't wait for them to speak first.
 
 Stay in character speaking German. Wait for user to finish before responding. If user asks a question (in any language), answer helpfully, then continue the roleplay.
 
