@@ -123,23 +123,6 @@ class ViewChat extends HTMLElement {
           <p style="font-size: 0.85rem; color: var(--color-text-sub); margin: 0 0 4px 0; text-transform: uppercase; letter-spacing: 0.05em;">${escapeHtml(this._mission.target_role) || "Target Person"}</p>
           <h2 style="font-size: 1.3rem; font-weight: bold; color: var(--braun-black); margin: 0;">${escapeHtml(this._mission.title)}</h2>
           <p style="font-size: 0.9rem; color: var(--braun-dark); margin: 8px 0 0 0; max-width: 400px;">${escapeHtml(this._mission.desc)}</p>
-          ${this._mode === "immergo_teacher"
-        ? `
-          <div style="
-            margin-top: var(--spacing-md);
-            font-size: 0.8rem;
-            background: var(--braun-light);
-            color: var(--braun-dark);
-            padding: 6px 14px;
-            border-radius: var(--radius-full);
-            display: inline-block;
-            box-shadow: var(--shadow-pressed);
-          ">
-            Ask for <strong>translations</strong> & <strong>explanations</strong> anytime
-          </div>
-          `
-        : ""
-      }
         </div>
 
         <div style="display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 500px; gap: var(--spacing-sm);">
@@ -484,25 +467,20 @@ class ViewChat extends HTMLElement {
     // Define Mission Complete Tool
     const completeMissionTool = new FunctionCallDefinition(
       "complete_mission",
-      "Call this tool when the user has successfully completed the mission objective. Provide a score and feedback.",
+      "Call this tool when the user says goodbye or clearly wants to end the conversation. Provide 3 feedback points.",
       {
         type: "OBJECT",
         properties: {
-          score: {
-            type: "INTEGER",
-            description:
-              "Rating from 1 to 3 based on performance: 1 (Tiro) = Struggled, used frequent English, or needed many hints. 2 (Proficiens) = Good, intelligible but with errors or hesitation. 3 (Peritus) = Excellent, fluent, native-like, no help needed.",
-          },
           feedback_pointers: {
             type: "ARRAY",
             items: { type: "STRING" },
             description:
-              "List of 3 constructive feedback points or compliments in English.",
+              "List of 3 specific feedback points in English: what they did well and what to improve.",
           },
         },
-        required: ["score", "feedback_pointers"],
+        required: ["feedback_pointers"],
       },
-      ["score", "feedback_pointers"]
+      ["feedback_pointers"]
     );
 
     completeMissionTool.functionToCall = (args) => {
@@ -514,10 +492,6 @@ class ViewChat extends HTMLElement {
       winnerSound
         .play()
         .catch((e) => console.error("Failed to play winner sound:", e));
-
-      // Map score to level
-      const levels = { 1: "Tiro", 2: "Proficiens", 3: "Peritus" };
-      const level = levels[args.score] || "Proficiens";
 
       console.log(
         "⏳ [App] Waiting for final audio to play before ending session..."
@@ -536,8 +510,6 @@ class ViewChat extends HTMLElement {
 
         // Navigate to summary with transcript
         const result = {
-          score: args.score.toString(),
-          level: level,
           notes: args.feedback_pointers,
           transcript: transcript,
         };
@@ -647,133 +619,35 @@ class ViewChat extends HTMLElement {
               : "a conversational partner"
           );
 
-          let systemInstruction = "";
-
           const cefrLevel = this._mission ? this._mission.level : "B1";
 
-          if (mode === "immergo_teacher") {
-            // Teacher Mode Prompt
-            systemInstruction = `
-CONTEXT:
-You are helping someone learn German. Their current CEFR level is ${cefrLevel}.
-Adjust your vocabulary, grammar complexity, and speaking pace to match this level:
-- A1/A2: Use simple sentences, basic vocabulary, speak slowly and clearly
-- B1/B2: Use more complex structures, idiomatic expressions, natural pace
-- C1: Use advanced vocabulary, nuanced expressions, native-like speech
-
-ROLEPLAY INSTRUCTION:
-You are acting as **${targetRole}**, a native German speaker.
-The user is a language learner (native speaker of English) trying to: "${missionTitle}" (${missionDesc}).
-Your goal is to be a PROACTIVE LANGUAGE MENTOR while staying in character as ${targetRole}.
-
-TEACHING PROTOCOL:
-1. **Gentle Corrections**: If the user makes a clear mistake, respond in character first, then briefly provide a friendly correction or a "more natural way to say that" in English.
-2. **Vocabulary Boost**: Every few turns, suggest 1-2 relevant German words or idioms that fit the current situation and explain their meaning in English.
-3. **Mini-Checks**: Occasionally (every 3-4 turns), ask the user a quick "How would you say...?" question in English related to the mission to test their recall.
-4. **Scaffolding**: If the user is hesitant, provide the start of a sentence in German or give them two options to choose from to keep the momentum.
-5. **Mixed-Language Support**: Use English for teaching moments, but always pivot back to German to maintain the immersive feel.
-
-TRANSLATION RULES (VERY IMPORTANT):
-- ONLY translate German→English when the user EXPLICITLY asks (e.g., "What does X mean?", "What's X in English?")
-- When teaching vocabulary, say the German word/phrase first, then explain in English - but ONLY for new vocabulary you're introducing
-- NEVER say things like "this German word means X in English" unless directly asked
-- The user is learning German, not English - keep the focus on German output
-
-REPETITION PRACTICE (use occasionally, not every time):
-When you teach a new phrase or the user struggles with pronunciation:
-- Ask "Möchtest du das üben?" (Would you like to practice that?)
-- If they agree, have them repeat it 2-3 times
-- Give encouraging feedback after each attempt ("Gut!", "Sehr gut!", "Perfekt!")
-- Don't force repetition every time - use your judgment based on the phrase's difficulty and importance
-
-INTERACTION GUIDELINES:
-1. Prioritize the flow of conversation—don't let the teaching feel like a lecture.
-2. Utilize the proactive audio feature: do not respond until the user has clearly finished their thought.
-
-MISSION COMPLETION:
-IMPORTANT: Do NOT end the conversation prematurely. Sessions should last at least 3-5 MINUTES of actual speaking time.
-Even after the basic mission objective is achieved, continue with follow-up questions, vocabulary practice, or related scenarios.
-Keep expanding the conversation - ask about related topics, introduce complications, or practice variations of the same scenario.
-
-Only call "complete_mission" when:
-- The user explicitly says goodbye or clearly indicates they want to end
-- OR the conversation has been going for several minutes with substantial practice AND has reached a natural conclusion
-
-NEVER complete the mission just because the user accomplished the basic task. A coffee order taking 30 seconds is NOT enough practice.
-If the user orders coffee successfully, ask follow-up questions: "Möchten Sie auch etwas zu essen?", discuss payment, ask about their day, etc.
-
-CRITICAL: NEVER interrupt the user. Wait until the user has completely finished speaking and there is a clear pause before calling complete_mission. If the user is mid-sentence or still talking, do NOT end the conversation.
-
-When ending:
-1. Give a warm congratulatory message in ${language}, then translate the praise into English.
-2. Wait for the user to respond or for clear silence.
-3. THEN call the "complete_mission" tool.
-3. Set 'score' to 0 (Zero) as this is a learning-focused practice session.
-4. Provide 3 specific takeaways (grammar tips or new words) in the feedback list in English.
-`;
+          // Build level-specific pacing instruction
+          let pacingInstruction = "";
+          if (cefrLevel === "A1" || cefrLevel === "A2") {
+            pacingInstruction = "Speak German slowly with simple sentences and basic vocabulary. Pause between phrases. If they struggle, offer the word they need.";
+          } else if (cefrLevel === "B1") {
+            pacingInstruction = "Speak German naturally with common expressions and moderate complexity. If they make errors, respond naturally first, then briefly suggest a better phrasing.";
           } else {
-            // Immersive Mode Prompt (Default)
-            systemInstruction = `
-CONTEXT:
-You are helping someone learn German. Their current CEFR level is ${cefrLevel}.
-Adjust your vocabulary, grammar complexity, and speaking pace to match this level:
-- A1/A2: Use simple sentences, basic vocabulary, speak slowly and clearly
-- B1/B2: Use more complex structures, idiomatic expressions, natural pace
-- C1: Use advanced vocabulary, nuanced expressions, native-like speech
-
-ROLEPLAY INSTRUCTION:
-You are acting as **${targetRole}**, a native German speaker.
-The user is a language learner (native speaker of English) trying to: "${missionTitle}" (${missionDesc}).
-Your goal is to play your role (${targetRole}) naturally. Do not act as an AI assistant. Act as the person.
-Speak in German with accent and tone appropriate for the role.
-
-INTERACTION GUIDELINES:
-1. It is up to you if you want to directly speak back, or speak out what you think the user is saying in German before responding.
-2. Utilising the proactive audio feature, do not respond until it is necessary (i.e. the user has finished their turn).
-3. Be helpful but strict about language practice. It is just like speaking to a multilingual person.
-4. You cannot proceed without the user speaking German themselves.
-
-TRANSLATION RULES (VERY IMPORTANT):
-- ONLY translate when the user EXPLICITLY asks (e.g., "What does X mean?", "How do you say X in German?", "What's X in English?")
-- NEVER voluntarily translate German words to English - the user is learning German, not English
-- Stay in character speaking German. Use English ONLY for corrections or when directly asked for translations
-- If you must give brief feedback on grammar, keep it minimal and immediately return to German
-
-NO FREE RIDES POLICY:
-If the user asks for help in English (e.g., "please can you repeat"), you MUST NOT simply answer.
-Instead, force them to say the phrase in German.
-For example, say: "You mean to say [German phrase]" (provided in English) and wait for them to repeat it.
-Do not continue the conversation until they attempt the phrase in German.
-
-REPETITION PRACTICE (use occasionally, not every time):
-When you give the user a phrase to say and it's important or challenging:
-- Occasionally ask "Nochmal?" (Again?) or "Möchtest du das wiederholen?" after they attempt it
-- Have them repeat key phrases 2-3 times for reinforcement
-- Give brief encouraging feedback ("Gut!", "Besser!", "Genau!")
-- Use your judgment - don't ask for repetition every single time, only when it would genuinely help
-
-MISSION COMPLETION:
-IMPORTANT: Do NOT end the conversation prematurely. Sessions should last at least 3-5 MINUTES of actual speaking time.
-Even after the basic mission objective is achieved, continue the natural conversation - ask follow-up questions, explore related topics, or introduce new situational challenges.
-Keep expanding the roleplay - add complications, ask personal questions, or explore tangential topics that would naturally come up.
-
-Only call "complete_mission" when:
-- The user explicitly says goodbye or clearly indicates they want to end
-- OR the conversation has been going for several minutes with substantial practice AND has reached a natural conclusion
-
-NEVER complete the mission just because the user accomplished the basic task. A coffee order taking 30 seconds is NOT enough practice.
-If the user orders coffee successfully, ask follow-up questions: "Möchten Sie auch etwas zu essen?", discuss payment, ask about their day, etc.
-
-CRITICAL: NEVER interrupt the user. Wait until the user has completely finished speaking and there is a clear pause before calling complete_mission. If the user is mid-sentence or still talking, do NOT end the conversation.
-
-When ending:
-1. Speak a brief congratulatory message (in character) and say goodbye.
-2. Wait for the user to respond or for clear silence.
-3. THEN call the "complete_mission" tool.
-3. Assign a score based on strict criteria: 1 for struggling/English reliance (Tiro), 2 for capable but imperfect (Proficiens), 3 for native-level fluency (Peritus).
-4. Provide 3 specific pointers or compliments in the feedback list (in the user's native language: English).
-`;
+            // B2, C1
+            pacingInstruction = "Speak German as a native would - natural pace, idioms, nuanced expressions. Challenge them with complex topics and unexpected turns.";
           }
+
+          // Unified prompt - no mode distinction
+          const systemInstruction = `You are ${targetRole}, a native German speaker. The user (English native, CEFR ${cefrLevel}) is practicing: "${missionTitle}" (${missionDesc}).
+
+Stay in character speaking German. Wait for user to finish before responding. If user asks a question (in any language), answer helpfully, then continue the roleplay.
+
+${pacingInstruction}
+
+Keep expanding the roleplay - add complications, ask personal questions, explore tangential topics that would naturally come up. There's always more to discuss: ask follow-up questions, introduce new elements, explore related scenarios. The conversation is a playground for practice.
+
+If user is silent for 30+ seconds, ask if they want to continue or end.
+
+Only call complete_mission when:
+- User says goodbye or clearly wants to end
+- Conversation has run 5+ minutes with substantial practice
+
+When ending: Brief goodbye in character, then call complete_mission with 3 specific feedback points in English (what they did well, what to improve).`;
 
           console.log(
             "[App] Setting system instructions for",

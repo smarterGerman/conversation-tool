@@ -40,8 +40,8 @@ class ViewSummary extends HTMLElement {
             <div style="margin: var(--spacing-xxl) 0; opacity: 0.7;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
                 <p style="margin-top: var(--spacing-md); font-size: 1.1rem;">
-                    You didn't complete the mission objectives.<br>
-                    No score awarded this time.
+                    Session ended early.<br>
+                    Keep practicing!
                 </p>
             </div>
 
@@ -53,13 +53,9 @@ class ViewSummary extends HTMLElement {
     } else {
       this.innerHTML = `
           <div class="container text-center">
-            <h2 style="margin-top: var(--spacing-xl); color: var(--color-accent-secondary);">Mission Accomplished!</h2>
-            
-            <div style="margin: var(--spacing-lg) 0;">
-              ${this._result.score !== "0" && this._result.score !== 0 ? this._renderScore(this._result.score) : '<p style="font-size: 1.2rem; opacity: 0.8;">Practice session complete!</p>'}
-            </div>
+            <h2 style="margin-top: var(--spacing-xl); color: var(--color-accent-secondary);">Well done!</h2>
 
-            <div class="card" style="text-align: left;">
+            <div class="card" style="text-align: left; margin-top: var(--spacing-lg);">
               <h4 style="border-bottom: 2px solid var(--color-bg); padding-bottom: var(--spacing-sm);">Feedback</h4>
               <ul style="padding-left: var(--spacing-lg); color: var(--color-text-sub);">
                 ${this._result.notes.map(note => `<li>${note}</li>`).join('')}
@@ -193,49 +189,6 @@ class ViewSummary extends HTMLElement {
     return div.innerHTML;
   }
 
-  _renderScore(score) {
-    const levels = [
-      { id: '1', title: 'Beginner', stars: 1 },
-      { id: '2', title: 'Intermediate', stars: 2 },
-      { id: '3', title: 'Fluent', stars: 3 }
-    ];
-
-    const descriptions = {
-      '1': 'Needed help, but you tried!',
-      '2': 'Good conversation with minor mistakes',
-      '3': 'Excellent - natural and fluent!'
-    };
-
-    const starIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`;
-
-    const scaleHtml = levels.map(level => {
-      const isCurrent = level.id === score.toString();
-      const opacity = isCurrent ? '1' : '0.3';
-      const color = isCurrent ? 'var(--color-accent-primary)' : 'var(--color-text-main)';
-      const weight = isCurrent ? 'bold' : 'normal';
-      const fontSize = isCurrent ? '1.1rem' : '0.9rem';
-
-      // Generate stars
-      let starsHtml = '';
-      for (let i = 0; i < level.stars; i++) starsHtml += starIcon;
-
-      return `
-        <div style="flex: 1; opacity: ${opacity}; color: ${color}; transition: all 0.3s ease; display: flex; flex-direction: column; align-items: center; gap: 4px;">
-           <div style="display: flex; gap: 2px; color: ${isCurrent ? 'var(--color-accent-secondary)' : 'currentColor'}">
-             ${starsHtml}
-           </div>
-           <span style="font-family: var(--font-heading); font-weight: ${weight}; font-size: ${fontSize};">${level.title}</span>
-        </div>
-      `;
-    }).join('');
-
-    return `
-      <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: var(--spacing-md); height: 80px;">
-        ${scaleHtml}
-      </div>
-      <p style="font-size: 1rem; opacity: 0.8; font-style: italic; margin-top: var(--spacing-md);">(${descriptions[score.toString()] || ''})</p>
-    `;
-  }
 }
 
 customElements.define('view-summary', ViewSummary);

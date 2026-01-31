@@ -37,43 +37,6 @@ class ViewMissions extends HTMLElement {
           margin-bottom: 2px;
         }
 
-
-        /* Mode Toggle */
-        .mode-toggle {
-          display: flex;
-          gap: var(--spacing-xs);
-          justify-content: center;
-          margin-bottom: var(--spacing-md);
-          background: var(--braun-light);
-          padding: var(--spacing-xs);
-          border-radius: var(--radius-md);
-          box-shadow: var(--shadow-pressed);
-        }
-
-        .mode-btn {
-          flex: 1;
-          max-width: 140px;
-          padding: 6px 14px;
-          border: none;
-          border-radius: var(--radius-sm);
-          background: transparent;
-          color: var(--color-text-sub);
-          font-weight: 600;
-          font-size: 0.8rem;
-          cursor: pointer;
-          transition: all 0.15s ease;
-        }
-
-        .mode-btn:hover {
-          color: var(--braun-dark);
-        }
-
-        .mode-btn.active {
-          background: var(--braun-white);
-          color: var(--braun-black);
-          box-shadow: var(--shadow-raised);
-        }
-
         /* Accordion container */
         .levels-container {
           flex: 1;
@@ -238,11 +201,6 @@ class ViewMissions extends HTMLElement {
           <h1 class="page-title">Select your level and topic</h1>
         </div>
 
-        <div class="mode-toggle">
-          <button id="mode-immersive" class="mode-btn active">Immersive</button>
-          <button id="mode-teacher" class="mode-btn">With Guidance</button>
-        </div>
-
         <div class="levels-container" id="levels-container">
           <!-- Levels rendered here -->
         </div>
@@ -250,33 +208,6 @@ class ViewMissions extends HTMLElement {
     `;
 
     this.renderLevels();
-    this.setupModeToggle();
-  }
-
-  setupModeToggle() {
-    const modeImmersive = this.querySelector('#mode-immersive');
-    const modeTeacher = this.querySelector('#mode-teacher');
-
-    let currentMode = localStorage.getItem('immergo_mode') || 'immergo_immersive';
-
-    const updateUI = () => {
-      modeImmersive.classList.toggle('active', currentMode === 'immergo_immersive');
-      modeTeacher.classList.toggle('active', currentMode === 'immergo_teacher');
-    };
-
-    modeImmersive.addEventListener('click', () => {
-      currentMode = 'immergo_immersive';
-      localStorage.setItem('immergo_mode', currentMode);
-      updateUI();
-    });
-
-    modeTeacher.addEventListener('click', () => {
-      currentMode = 'immergo_teacher';
-      localStorage.setItem('immergo_mode', currentMode);
-      updateUI();
-    });
-
-    updateUI();
   }
 
   renderLevels() {
